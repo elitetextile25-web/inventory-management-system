@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: "default" | "success" | "warning" | "danger" | "info" | "muted";
+  variant?: "default" | "success" | "warning" | "danger" | "info" | "muted" | "secondary" | "outline";
 }
 
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
@@ -17,6 +17,8 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
     danger: "bg-danger/10 text-danger",
     info: "bg-info/10 text-info",
     muted: "bg-muted text-muted-foreground",
+    secondary: "bg-secondary text-secondary-foreground",
+    outline: "border border-border text-foreground bg-transparent",
   };
 
   return (

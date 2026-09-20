@@ -38,8 +38,8 @@ export default async function NewPurchasePage() {
 
   return (
     <NewPurchaseClient
-      products={serializeData(products)}
-      suppliers={serializeData(suppliers)}
+      products={serializeData(products) as any}
+      suppliers={serializeData(suppliers) as any}
       defaultOrderNumber={defaultOrderNumber}
     />
   );

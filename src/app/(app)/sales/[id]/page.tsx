@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, formatDateTime, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime, formatNumber, serializeData } from "@/lib/utils";
 import { InvoicePrintButton } from "@/components/sales/invoice-print-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -89,7 +89,7 @@ export default async function SaleDetailPage({
               + New Invoice
             </Button>
           </Link>
-          <InvoicePrintButton />
+          <InvoicePrintButton saleId={sale.id} initialSale={serializeData(sale)} />
         </div>
       </div>
 

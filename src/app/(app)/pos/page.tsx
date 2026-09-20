@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { ReceiptPrintModal } from "@/components/sales/receipt-print-modal";
+import { ReceiptData } from "@/components/sales/thermal-receipt";
 
 interface CartItem {
   id: string;
@@ -163,6 +165,8 @@ export default function POSPage() {
   const [discount, setDiscount] = React.useState(0);
   const [paymentMethod, setPaymentMethod] = React.useState("CASH");
   const [paid, setPaid] = React.useState("");
+  const [completedSale, setCompletedSale] = React.useState<ReceiptData | null>(null);
+  const [showPrintModal, setShowPrintModal] = React.useState(false);
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -255,6 +259,45 @@ export default function POSPage() {
       toast.error("Insufficient payment amount");
       return;
     }
+
+    const invNum = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const saleReceipt: ReceiptData = {
+      id: invNum,
+      invoiceNumber: invNum,
+      saleDate: new Date(),
+      status: paidAmount >= grandTotal ? "PAID" : "PARTIALLY_PAID",
+      subtotal,
+      discountAmount: discount,
+      taxAmount: 0,
+      grandTotal,
+      paidAmount: paidAmount || grandTotal,
+      dueAmount: Math.max(0, grandTotal - (paidAmount || grandTotal)),
+      channel: "POS",
+      customer: { name: selectedCustomer },
+      store: { name: "FabricPro Textiles", address: "Main Retail Outlet", phone: "+880 1700-000000" },
+      items: cart.map((c) => ({
+        id: c.id,
+        productName: c.name,
+        productSku: c.sku,
+        quantity: c.quantity,
+        unitPrice: c.price,
+        discountAmount: c.discount || 0,
+        lineTotal: c.price * c.quantity - (c.discount || 0),
+        product: { unit: { abbreviation: c.unit || "m" } },
+      })),
+      payments: [
+        {
+          id: "p1",
+          method: paymentMethod,
+          amount: paidAmount || grandTotal,
+          paymentDate: new Date(),
+        },
+      ],
+    };
+
+    setCompletedSale(saleReceipt);
+    setShowPrintModal(true);
+
     toast.success(
       `Fabric sale complete! ${totalMeters.toFixed(2)}m cut for ${selectedCustomer}.`
     );
@@ -658,6 +701,15 @@ export default function POSPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ReceiptPrintModal
+        isOpen={showPrintModal}
+        onClose={() => {
+          setShowPrintModal(false);
+          setCompletedSale(null);
+        }}
+        initialSale={completedSale}
+      />
     </div>
   );
 }

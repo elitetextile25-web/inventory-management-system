@@ -39,8 +39,8 @@ export default async function NewInvoicePage() {
 
   return (
     <NewInvoiceClient
-      products={serializeData(products)}
-      customers={serializeData(customers)}
+      products={serializeData(products) as any}
+      customers={serializeData(customers) as any}
       defaultInvoiceNumber={defaultInvoiceNumber}
     />
   );
