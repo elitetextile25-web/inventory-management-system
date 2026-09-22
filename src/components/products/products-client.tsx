@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Plus, Search, Filter, Package, Edit2, Archive, Eye, Barcode, Download } from "lucide-react";
-import { FileSpreadsheet } from "@/components/ui/fabric-icons";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, EmptyState, Skeleton } from "@/components/ui/badge";
@@ -62,14 +61,10 @@ export function ProductsClient({
   const handleExport = async () => {
     try {
       setExporting(true);
-      const res = await fetch("/api/integrations/google-sheets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "EXPORT_XLSX" }),
-      });
+      const res = await fetch("/api/products/export");
 
       if (!res.ok) {
-        toast.error("Failed to generate Google Sheets export");
+        toast.error("Failed to generate Excel export");
         return;
       }
 
@@ -77,12 +72,12 @@ export function ProductsClient({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "FabricPro_Catalog_GoogleSheets.xlsx";
+      a.download = "FabricPro_Catalog.xlsx";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("Downloaded Google Sheets workbook!");
+      toast.success("Downloaded catalog Excel file!");
     } catch {
       toast.error("Failed to export products");
     } finally {
@@ -101,12 +96,6 @@ export function ProductsClient({
           <p className="text-sm text-muted-foreground">{total} fabrics in catalog</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/settings/google-sheets" className="gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <FileSpreadsheet className="w-4 h-4" />
-              Google Sheets Sync
-            </Link>
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5">
             <Download className="w-4 h-4" />
             {exporting ? "Exporting..." : "Export .xlsx"}

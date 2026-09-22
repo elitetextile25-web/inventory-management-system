@@ -13,7 +13,6 @@ import {
   Users,
   Building2,
   BarChart3,
-  FileSpreadsheet,
   Settings,
   Shield,
   Plus,
@@ -67,15 +66,6 @@ const STATIC_ITEMS: SearchItem[] = [
     icon: ShoppingBag,
     href: "/purchases",
     badge: "Stock In",
-  },
-  {
-    id: "action-sheets",
-    title: "Sync with Google Sheets",
-    subtitle: "Cloud backup and 15GB Google Drive sync",
-    category: "Quick Actions",
-    icon: FileSpreadsheet,
-    href: "/settings/google-sheets",
-    badge: "Cloud",
   },
 
   // Navigation

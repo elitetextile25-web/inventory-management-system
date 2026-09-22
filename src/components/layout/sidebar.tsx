@@ -8,9 +8,9 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, Users, Truck,
   RotateCcw, Wallet, TrendingUp, Settings, FileText, BarChart2,
   ChevronLeft, ChevronRight, Store, LogOut, Bell, HelpCircle,
-  ClipboardList, DollarSign, Activity, Layers
+  ClipboardList, DollarSign, Activity, Layers,
 } from "lucide-react";
-import { Scissors, FileSpreadsheet } from "@/components/ui/fabric-icons";
+import { Scissors } from "@/components/ui/fabric-icons";
 import { signOut } from "next-auth/react";
 
 const NAV_ITEMS = [
@@ -63,7 +63,6 @@ const NAV_ITEMS = [
   {
     group: "System",
     items: [
-      { label: "Google Sheets Sync", href: "/settings/google-sheets", icon: FileSpreadsheet },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },

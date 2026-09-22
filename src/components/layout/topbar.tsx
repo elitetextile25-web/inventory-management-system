@@ -18,7 +18,6 @@ import {
   User as UserIcon,
   Settings,
   Shield,
-  FileSpreadsheet,
   CheckCheck,
   AlertTriangle,
   PackageCheck,
@@ -77,12 +76,12 @@ const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: "notif-4",
-    title: "Google Sheets Cloud Sync Complete",
-    description: "145 fabric roll balances backed up to Google Drive",
+    title: "Supabase Database Connected",
+    description: "PostgreSQL cloud database synchronized",
     time: "4h ago",
     read: true,
     type: "info",
-    href: "/settings/google-sheets",
+    href: "/settings",
   },
 ];
 
@@ -544,14 +543,6 @@ export function Topbar({ onSidebarToggle, user, sidebarCollapsed }: TopbarProps)
                   >
                     <Settings className="w-4 h-4 text-muted-foreground" />
                     <span>System Settings</span>
-                  </Link>
-                  <Link
-                    href="/settings/google-sheets"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Google Sheets 15GB Sync</span>
                   </Link>
                   <Link
                     href="/audit"

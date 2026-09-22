@@ -180,16 +180,16 @@ export default function BackupSettingsPage() {
         <CardContent>
           <div className="space-y-3 text-xs text-muted-foreground">
             <div className="p-3 rounded-lg bg-muted/30 border border-border">
-              <p className="font-semibold text-foreground mb-1">Google Sheets Sync</p>
-              <p>Use the Google Sheets integration to keep a live copy of all your data in your free Google Drive account.</p>
+              <p className="font-semibold text-foreground mb-1">Supabase Cloud Database</p>
+              <p>All your data is securely stored in your managed Supabase PostgreSQL cloud database with automated replication.</p>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border border-border">
-              <p className="font-semibold text-foreground mb-1">Download Workbooks</p>
-              <p>Periodically download .xlsx workbooks from the Google Sheets settings page as local backups.</p>
+              <p className="font-semibold text-foreground mb-1">Export Catalog</p>
+              <p>Download Excel spreadsheets from Fabrics &amp; Products catalog anytime for offline reporting and archiving.</p>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border border-border">
-              <p className="font-semibold text-foreground mb-1">Database Backups</p>
-              <p>Your PostgreSQL database can be backed up using pg_dump for complete point-in-time recovery.</p>
+              <p className="font-semibold text-foreground mb-1">Database Point-in-Time Recovery</p>
+              <p>Your Supabase project includes automatic daily snapshots and WAL backups for enterprise disaster recovery.</p>
             </div>
           </div>
         </CardContent>

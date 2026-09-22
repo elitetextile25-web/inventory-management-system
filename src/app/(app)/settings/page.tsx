@@ -4,7 +4,6 @@ export const metadata = { title: "Settings — FabricPro" };
 
 export default function SettingsPage() {
   const sections = [
-    { label: "Google Sheets Storage & Sync", description: "Use your free 15 GB Google Drive to store and sync fabric stock & sales", href: "/settings/google-sheets" },
     { label: "Organization", description: "Business name, address, contact info", href: "/settings/organization" },
     { label: "Store", description: "Store settings, timezone, currency", href: "/settings/store" },
     { label: "Users & Roles", description: "Manage users, roles and permissions", href: "/settings/users" },
