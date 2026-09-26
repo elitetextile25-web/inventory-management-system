@@ -1,4 +1,6 @@
 {
+  "installCommand": "npm install --foreground-scripts",
   "buildCommand": "prisma generate && next build",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "outputDirectory": ".next"
 }
