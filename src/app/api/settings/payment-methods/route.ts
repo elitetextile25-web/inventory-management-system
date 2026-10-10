@@ -41,6 +41,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "UPDATE") {
+    const existing = await prisma.cashAccount.findFirst({
+      where: { id: body.id, storeId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Account not found in your store" }, { status: 404 });
+    }
+
     const account = await prisma.cashAccount.update({
       where: { id: body.id },
       data: {

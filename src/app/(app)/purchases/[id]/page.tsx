@@ -17,8 +17,16 @@ import { formatCurrency, formatDate, formatDateTime, formatNumber } from "@/lib/
 import { InvoicePrintButton } from "@/components/sales/invoice-print-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const organizationId = (session?.user as any)?.organizationId;
   const { id } = await params;
-  const order = await prisma.purchaseOrder.findUnique({ where: { id }, select: { orderNumber: true } });
+  const order = await prisma.purchaseOrder.findFirst({
+    where: {
+      id,
+      ...(organizationId ? { store: { organizationId } } : {}),
+    },
+    select: { orderNumber: true },
+  });
   return { title: order ? `PO ${order.orderNumber} — FabricPro` : "Purchase Order — FabricPro" };
 }
 
@@ -28,10 +36,14 @@ export default async function PurchaseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
+  const organizationId = (session?.user as any)?.organizationId;
   const { id } = await params;
 
   const order = await prisma.purchaseOrder.findFirst({
-    where: { id },
+    where: {
+      id,
+      ...(organizationId ? { store: { organizationId } } : {}),
+    },
     include: {
       supplier: true,
       store: true,

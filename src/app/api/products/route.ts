@@ -62,11 +62,19 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     const organizationId = (session?.user as any)?.organizationId;
-    const storeId = (session?.user as any)?.storeId;
+    let storeId = (session?.user as any)?.storeId;
     const userId = session?.user?.id;
 
     if (!organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!storeId) {
+      const defaultStore = await prisma.store.findFirst({
+        where: { organizationId, isActive: true },
+        select: { id: true },
+      });
+      storeId = defaultStore?.id;
     }
 
     const body = await req.json();

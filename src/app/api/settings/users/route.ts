@@ -22,7 +22,10 @@ export async function GET() {
     }),
   ]);
 
-  return NextResponse.json({ users, roles });
+  // Strip passwordHash before sending response
+  const sanitizedUsers = users.map(({ passwordHash: _, ...safeUser }) => safeUser);
+
+  return NextResponse.json({ users: sanitizedUsers, roles });
 }
 
 export async function POST(req: NextRequest) {
@@ -56,15 +59,26 @@ export async function POST(req: NextRequest) {
           : undefined,
       },
     });
-    return NextResponse.json(user, { status: 201 });
+
+    const { passwordHash: _, ...safeUser } = user;
+    return NextResponse.json(safeUser, { status: 201 });
   }
 
   if (body.action === "TOGGLE_ACTIVE") {
+    const target = await prisma.user.findFirst({
+      where: { id: body.userId, organizationId: orgId },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "User not found in your organization" }, { status: 404 });
+    }
+
     const user = await prisma.user.update({
       where: { id: body.userId },
       data: { isActive: body.isActive },
     });
-    return NextResponse.json(user);
+
+    const { passwordHash: _, ...safeUser } = user;
+    return NextResponse.json(safeUser);
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

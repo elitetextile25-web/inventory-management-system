@@ -18,9 +18,15 @@ export default async function ReturnsPage({
 
   const page = Number(sp.page ?? 1);
   const pageSize = 20;
-  const skip = (page - 1) * pageSize;
+  const organizationId = (session?.user as any)?.organizationId;
+  const storeId = (session?.user as any)?.storeId;
 
   const where: any = {};
+  if (storeId) {
+    where.sale = { storeId };
+  } else if (organizationId) {
+    where.sale = { store: { organizationId } };
+  }
   if (sp.search) {
     where.OR = [
       { returnNumber: { contains: sp.search, mode: "insensitive" } },
@@ -28,6 +34,8 @@ export default async function ReturnsPage({
     ];
   }
   if (sp.status) where.status = sp.status;
+
+  const skip = (page - 1) * pageSize;
 
   const [returns, total] = await Promise.all([
     prisma.saleReturn.findMany({

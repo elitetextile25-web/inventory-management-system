@@ -20,8 +20,16 @@ import { formatCurrency, formatDate, formatDateTime, formatNumber, serializeData
 import { InvoicePrintButton } from "@/components/sales/invoice-print-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const organizationId = (session?.user as any)?.organizationId;
   const { id } = await params;
-  const sale = await prisma.sales.findUnique({ where: { id }, select: { invoiceNumber: true } });
+  const sale = await prisma.sales.findFirst({
+    where: {
+      id,
+      ...(organizationId ? { store: { organizationId } } : {}),
+    },
+    select: { invoiceNumber: true },
+  });
   return { title: sale ? `Invoice ${sale.invoiceNumber} — FabricPro` : "Invoice — FabricPro" };
 }
 
@@ -35,7 +43,10 @@ export default async function SaleDetailPage({
   const { id } = await params;
 
   const sale = await prisma.sales.findFirst({
-    where: { id },
+    where: {
+      id,
+      ...(organizationId ? { store: { organizationId } } : {}),
+    },
     include: {
       customer: true,
       store: true,

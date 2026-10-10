@@ -35,6 +35,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "UPDATE") {
+    const existing = await prisma.expenseCategory.findFirst({
+      where: { id: body.id, organizationId: orgId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
     const category = await prisma.expenseCategory.update({
       where: { id: body.id },
       data: {
@@ -47,6 +54,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "DELETE") {
+    const existing = await prisma.expenseCategory.findFirst({
+      where: { id: body.id, organizationId: orgId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
     await prisma.expenseCategory.delete({ where: { id: body.id } });
     return NextResponse.json({ success: true });
   }

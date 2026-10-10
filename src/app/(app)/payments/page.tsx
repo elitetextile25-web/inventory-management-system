@@ -20,7 +20,12 @@ export default async function PaymentsPage({
   const pageSize = 20;
   const skip = (page - 1) * pageSize;
 
+  const organizationId = (session?.user as any)?.organizationId;
+  const storeId = (session?.user as any)?.storeId;
+
   const where: any = {};
+  if (organizationId) where.organizationId = organizationId;
+  if (storeId) where.storeId = storeId;
   if (sp.search) {
     where.OR = [
       { reference: { contains: sp.search, mode: "insensitive" } },
@@ -30,6 +35,8 @@ export default async function PaymentsPage({
   }
   if (sp.type) where.type = sp.type;
   if (sp.method) where.method = sp.method;
+
+  const orgFilter = organizationId ? { organizationId } : {};
 
   const [payments, total, totalReceived, totalPaid] = await Promise.all([
     prisma.payment.findMany({
@@ -45,11 +52,11 @@ export default async function PaymentsPage({
     }),
     prisma.payment.count({ where }),
     prisma.payment.aggregate({
-      where: { type: "SALE_PAYMENT", status: "COMPLETED" },
+      where: { ...orgFilter, type: "SALE_PAYMENT", status: "COMPLETED" },
       _sum: { amount: true },
     }),
     prisma.payment.aggregate({
-      where: { type: { in: ["PURCHASE_PAYMENT", "EXPENSE_PAYMENT"] }, status: "COMPLETED" },
+      where: { ...orgFilter, type: { in: ["PURCHASE_PAYMENT", "EXPENSE_PAYMENT"] }, status: "COMPLETED" },
       _sum: { amount: true },
     }),
   ]);

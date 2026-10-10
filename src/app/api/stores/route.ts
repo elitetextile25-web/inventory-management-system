@@ -7,10 +7,11 @@ export async function GET() {
     const session = await auth();
     const organizationId = (session?.user as any)?.organizationId;
 
-    const where: any = { isActive: true };
-    if (organizationId) {
-      where.organizationId = organizationId;
+    if (!organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const where = { isActive: true, organizationId };
 
     const stores = await prisma.store.findMany({
       where,

@@ -72,10 +72,21 @@ export async function POST(req: Request) {
       invNumber = `${invNumber}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
+    // Calculate authoritative totals server-side
+    const calculatedSubtotal = validated.items.reduce(
+      (sum, item) => sum + Math.max(0, item.quantity * item.unitPrice - (item.discountAmount || 0)),
+      0
+    );
+    const calculatedGrandTotal = Math.max(
+      0,
+      calculatedSubtotal - (validated.discountAmount || 0) + (validated.taxAmount || 0)
+    );
+    const calculatedDueAmount = Math.max(0, calculatedGrandTotal - (validated.paidAmount || 0));
+
     // Determine correct status based on payment
     let saleStatus = validated.status;
     if (saleStatus !== "DRAFT") {
-      if (validated.paidAmount >= validated.grandTotal && validated.grandTotal > 0) {
+      if (validated.paidAmount >= calculatedGrandTotal && calculatedGrandTotal > 0) {
         saleStatus = "PAID";
       } else if (validated.paidAmount > 0) {
         saleStatus = "PARTIALLY_PAID";
@@ -95,12 +106,12 @@ export async function POST(req: Request) {
           saleDate: validated.saleDate ? new Date(validated.saleDate) : new Date(),
           channel: "INVOICE",
           status: saleStatus,
-          subtotal: validated.subtotal,
+          subtotal: calculatedSubtotal,
           discountAmount: validated.discountAmount,
           taxAmount: validated.taxAmount,
-          grandTotal: validated.grandTotal,
+          grandTotal: calculatedGrandTotal,
           paidAmount: validated.paidAmount,
-          dueAmount: validated.dueAmount,
+          dueAmount: calculatedDueAmount,
           notes: validated.notes || null,
           createdBy: userId || null,
           items: {
@@ -110,7 +121,7 @@ export async function POST(req: Request) {
               unitPrice: item.unitPrice,
               discountAmount: item.discountAmount,
               taxAmount: item.taxAmount,
-              lineTotal: item.lineTotal,
+              lineTotal: Math.max(0, item.quantity * item.unitPrice - (item.discountAmount || 0)),
               unitCost: item.unitCost,
               productName: item.productName,
               productSku: item.productSku,

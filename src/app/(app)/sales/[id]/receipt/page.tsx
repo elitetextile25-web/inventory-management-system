@@ -13,9 +13,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  const organizationId = (session?.user as any)?.organizationId;
   const { id } = await params;
   const sale = await prisma.sales.findFirst({
-    where: { OR: [{ id }, { invoiceNumber: id }] },
+    where: {
+      ...(organizationId ? { store: { organizationId } } : {}),
+      OR: [{ id }, { invoiceNumber: id }],
+    },
     select: { invoiceNumber: true },
   });
   return {
@@ -37,7 +42,10 @@ export default async function SaleReceiptPage({
   const format = sp.format || "thermal";
 
   const sale = await prisma.sales.findFirst({
-    where: { OR: [{ id }, { invoiceNumber: id }] },
+    where: {
+      ...(organizationId ? { store: { organizationId } } : {}),
+      OR: [{ id }, { invoiceNumber: id }],
+    },
     include: {
       customer: true,
       store: true,

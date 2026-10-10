@@ -7,7 +7,15 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const orgId = (session.user as any).organizationId;
-  const storeId = (session.user as any).storeId;
+  let storeId = (session.user as any).storeId;
+
+  if (!storeId && orgId) {
+    const defaultStore = await prisma.store.findFirst({
+      where: { organizationId: orgId, isActive: true },
+      select: { id: true },
+    });
+    storeId = defaultStore?.id;
+  }
 
   // Tax settings stored as StoreSetting key-value pairs
   const settings = storeId
@@ -30,7 +38,15 @@ export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const storeId = (session.user as any).storeId;
+  const orgId = (session.user as any).organizationId;
+  let storeId = (session.user as any).storeId;
+  if (!storeId && orgId) {
+    const defaultStore = await prisma.store.findFirst({
+      where: { organizationId: orgId, isActive: true },
+      select: { id: true },
+    });
+    storeId = defaultStore?.id;
+  }
   if (!storeId) return NextResponse.json({ error: "No store assigned" }, { status: 400 });
 
   const body = await req.json();

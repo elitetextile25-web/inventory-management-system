@@ -17,9 +17,10 @@ export async function GET(
 
     const { id } = await params;
 
-    // Search by ID or by invoiceNumber
+    // Search by ID or by invoiceNumber scoped to organization
     const sale = await prisma.sales.findFirst({
       where: {
+        store: { organizationId },
         OR: [
           { id },
           { invoiceNumber: id },

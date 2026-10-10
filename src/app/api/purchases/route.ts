@@ -72,9 +72,22 @@ export async function POST(req: Request) {
       orderNum = `${orderNum}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
+    // Calculate authoritative totals server-side
+    const calculatedSubtotal = validated.items.reduce(
+      (sum, item) => sum + Math.max(0, item.quantity * item.unitCost - (item.discountAmount || 0)),
+      0
+    );
+    const calculatedGrandTotal = Math.max(
+      0,
+      calculatedSubtotal - (validated.discountAmount || 0) + (validated.taxAmount || 0) + (validated.shippingCost || 0)
+    );
+    const calculatedDueAmount = Math.max(0, calculatedGrandTotal - (validated.paidAmount || 0));
+
     let purchaseStatus = validated.status;
+    const isGoodsReceived = validated.status === "RECEIVED" || purchaseStatus === "RECEIVED";
+
     if (purchaseStatus !== "DRAFT") {
-      if (validated.paidAmount >= validated.grandTotal && validated.grandTotal > 0) {
+      if (validated.paidAmount >= calculatedGrandTotal && calculatedGrandTotal > 0) {
         purchaseStatus = "PAID";
       } else if (validated.paidAmount > 0) {
         purchaseStatus = "PARTIALLY_PAID";
@@ -90,13 +103,13 @@ export async function POST(req: Request) {
           orderDate: validated.orderDate ? new Date(validated.orderDate) : new Date(),
           expectedDate: validated.expectedDate ? new Date(validated.expectedDate) : null,
           status: purchaseStatus as any,
-          subtotal: validated.subtotal,
+          subtotal: calculatedSubtotal,
           discountAmount: validated.discountAmount,
           taxAmount: validated.taxAmount,
           shippingCost: validated.shippingCost,
-          grandTotal: validated.grandTotal,
+          grandTotal: calculatedGrandTotal,
           paidAmount: validated.paidAmount,
-          dueAmount: validated.dueAmount,
+          dueAmount: calculatedDueAmount,
           notes: validated.notes || null,
           createdBy: userId || null,
           items: {
@@ -106,7 +119,7 @@ export async function POST(req: Request) {
               unitCost: item.unitCost,
               discountAmount: item.discountAmount,
               taxAmount: item.taxAmount,
-              lineTotal: item.lineTotal,
+              lineTotal: Math.max(0, item.quantity * item.unitCost - (item.discountAmount || 0)),
               productName: item.productName,
               productSku: item.productSku,
             })),
@@ -135,8 +148,8 @@ export async function POST(req: Request) {
         });
       }
 
-      // If received or ordered, increment stock & create stock movement
-      if (purchaseStatus === "RECEIVED" || purchaseStatus === "PAID") {
+      // If received or paid in full, increment stock & create stock movement
+      if (isGoodsReceived || purchaseStatus === "PAID") {
         for (const item of validated.items) {
           await tx.inventoryBalance.upsert({
             where: {

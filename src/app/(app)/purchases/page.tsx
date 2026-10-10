@@ -16,7 +16,8 @@ export default async function PurchasesPage({
   const pageSize = 20;
   const skip = (page - 1) * pageSize;
 
-  const where: any = { storeId };
+  const organizationId = (session?.user as any)?.organizationId;
+  const where: any = storeId ? { storeId } : { store: { organizationId } };
   if (sp.search) {
     where.OR = [
       { orderNumber: { contains: sp.search, mode: "insensitive" } },

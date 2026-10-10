@@ -53,6 +53,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const existing = await prisma.product.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
     const body = await req.json();
 
     const product = await prisma.product.update({
@@ -93,6 +101,32 @@ export async function DELETE(
 
     if (!organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const existing = await prisma.product.findFirst({
+      where: { id, organizationId },
+      include: {
+        _count: {
+          select: {
+            saleItems: true,
+            purchaseItems: true,
+          },
+        },
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (existing._count.saleItems > 0 || existing._count.purchaseItems > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete a fabric product linked to historical sales or purchase orders. Please archive the product instead to preserve audit history.",
+        },
+        { status: 400 }
+      );
     }
 
     await prisma.product.delete({

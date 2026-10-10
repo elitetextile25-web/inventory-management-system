@@ -9,6 +9,9 @@ export default auth((req) => {
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!req.auth && !isPublic) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

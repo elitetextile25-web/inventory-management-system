@@ -11,32 +11,76 @@ export const metadata = {
 
 export default async function CashRegisterPage() {
   const session = await auth();
-  const storeId = (session?.user as any)?.storeId;
+  const organizationId = (session?.user as any)?.organizationId;
+  let activeStoreId = (session?.user as any)?.storeId;
+
+  if (!activeStoreId && organizationId) {
+    const defaultStore = await prisma.store.findFirst({
+      where: { organizationId, isActive: true },
+      select: { id: true },
+    });
+    activeStoreId = defaultStore?.id;
+  }
 
   // Find cash accounts for the store
   const cashAccounts = await prisma.cashAccount.findMany({
-    where: storeId ? { storeId } : {},
-    take: 5,
+    where: activeStoreId
+      ? { storeId: activeStoreId }
+      : (organizationId ? { store: { organizationId } } : {}),
+    orderBy: { isDefault: "desc" },
+    take: 10,
   });
 
   const defaultAccount = cashAccounts[0] || {
     id: "default",
     name: "Main POS Cash Drawer",
     type: "CASH",
-    currentBalance: 15450.0,
-    openingBalance: 5000.0,
+    currentBalance: 0,
+    openingBalance: 0,
   };
 
-  // Recent cash payments
-  const recentCash = await prisma.payment.findMany({
-    where: { method: "CASH" },
-    orderBy: { paymentDate: "desc" },
-    take: 10,
-    include: {
-      customer: { select: { name: true } },
-      supplier: { select: { name: true } },
-    },
-  });
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const orgOrStore = activeStoreId
+    ? { storeId: activeStoreId }
+    : (organizationId ? { organizationId } : {});
+
+  // Real cash aggregates today and recent transactions
+  const [cashSalesToday, cashPayoutsToday, recentCash] = await Promise.all([
+    prisma.payment.aggregate({
+      where: {
+        ...orgOrStore,
+        method: "CASH",
+        type: "SALE_PAYMENT",
+        paymentDate: { gte: startOfToday },
+        status: "COMPLETED",
+      },
+      _sum: { amount: true },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        ...orgOrStore,
+        method: "CASH",
+        type: { in: ["PURCHASE_PAYMENT", "EXPENSE_PAYMENT"] },
+        paymentDate: { gte: startOfToday },
+        status: "COMPLETED",
+      },
+      _sum: { amount: true },
+    }),
+    prisma.payment.findMany({
+      where: { ...orgOrStore, method: "CASH" },
+      orderBy: { paymentDate: "desc" },
+      take: 10,
+      include: {
+        customer: { select: { name: true } },
+        supplier: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const salesTodayAmount = Number(cashSalesToday._sum.amount ?? 0);
+  const payoutsTodayAmount = Number(cashPayoutsToday._sum.amount ?? 0);
 
   return (
     <div className="space-y-6">
@@ -99,7 +143,7 @@ export default async function CashRegisterPage() {
           <CardContent className="p-5">
             <span className="text-xs font-semibold text-muted-foreground uppercase">Cash Sales Today</span>
             <p className="text-2xl font-bold mt-3 text-success">
-              {formatCurrency(12450.0)}
+              {formatCurrency(salesTodayAmount)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">From completed POS orders</p>
           </CardContent>
@@ -109,7 +153,7 @@ export default async function CashRegisterPage() {
           <CardContent className="p-5">
             <span className="text-xs font-semibold text-muted-foreground uppercase">Cash Payouts Today</span>
             <p className="text-2xl font-bold mt-3 text-danger">
-              {formatCurrency(2000.0)}
+              {formatCurrency(payoutsTodayAmount)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Petty cash & supplier COD</p>
           </CardContent>
@@ -129,38 +173,31 @@ export default async function CashRegisterPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-sm">Main Counter Register 1</p>
-                <p className="text-xs text-muted-foreground">Opened at 09:00 AM • Staff: Cashier 1</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-sm text-primary">{formatCurrency(15450.0)}</p>
-                <span className="text-[10px] text-success font-medium">Active</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-lg border border-border hover:bg-muted/30 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">bKash Merchant Wallet</p>
-                <p className="text-xs text-muted-foreground">01700-000000</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-sm">{formatCurrency(45200.0)}</p>
-                <span className="text-[10px] text-muted-foreground">Linked</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-lg border border-border hover:bg-muted/30 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">Nagad Merchant Wallet</p>
-                <p className="text-xs text-muted-foreground">01800-000000</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-sm">{formatCurrency(18900.0)}</p>
-                <span className="text-[10px] text-muted-foreground">Linked</span>
-              </div>
-            </div>
+            {cashAccounts.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                No custom accounts registered. Primary drawer active.
+              </p>
+            ) : (
+              cashAccounts.map((acc: any) => (
+                <div
+                  key={acc.id}
+                  className="p-3 rounded-lg border border-border hover:bg-muted/30 flex items-center justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-sm">{acc.name}</p>
+                    <p className="text-xs text-muted-foreground">Type: {acc.type}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-sm text-primary">
+                      {formatCurrency(Number(acc.currentBalance))}
+                    </p>
+                    <span className="text-[10px] text-success font-medium">
+                      {acc.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

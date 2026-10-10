@@ -6,7 +6,16 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const storeId = (session.user as any).storeId;
+  const orgId = (session.user as any).organizationId;
+  let storeId = (session.user as any).storeId;
+  if (!storeId && orgId) {
+    const defaultStore = await prisma.store.findFirst({
+      where: { organizationId: orgId, isActive: true },
+      select: { id: true },
+    });
+    storeId = defaultStore?.id;
+  }
+
   const settings = storeId
     ? await prisma.storeSetting.findMany({ where: { storeId, key: { startsWith: "barcode_" } } })
     : [];
@@ -28,7 +37,15 @@ export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const storeId = (session.user as any).storeId;
+  const orgId = (session.user as any).organizationId;
+  let storeId = (session.user as any).storeId;
+  if (!storeId && orgId) {
+    const defaultStore = await prisma.store.findFirst({
+      where: { organizationId: orgId, isActive: true },
+      select: { id: true },
+    });
+    storeId = defaultStore?.id;
+  }
   if (!storeId) return NextResponse.json({ error: "No store assigned" }, { status: 400 });
 
   const body = await req.json();
