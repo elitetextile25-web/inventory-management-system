@@ -37,6 +37,10 @@ model Organization {
   expenses  Expense[]
   auditLogs AuditLog[]
   documentSequences DocumentSequence[]
+  countries Country[]
+  divisions Division[]
+  districts District[]
+  areas     Area[]
 
   @@map("organizations")
 }
@@ -919,4 +923,76 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
   @@map("audit_logs")
+}
+
+// ─── GEOGRAPHIC CONFIGURATION ───────────────────────────────────────────────
+
+model Country {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  code           String?
+  phoneCode      String?
+  currency       String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  divisions Division[]
+
+  @@unique([organizationId, name])
+  @@map("countries")
+}
+
+model Division {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  countryId      String
+  country        Country      @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  districts District[]
+
+  @@unique([countryId, name])
+  @@map("divisions")
+}
+
+model District {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  divisionId     String
+  division       Division     @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  areas Area[]
+
+  @@unique([divisionId, name])
+  @@map("districts")
+}
+
+model Area {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  districtId     String
+  district       District     @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  name           String
+  postalCode     String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([districtId, name])
+  @@map("areas")
 }

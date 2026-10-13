@@ -4,6 +4,7 @@ export const metadata = { title: "Settings — FabricPro" };
 
 export default function SettingsPage() {
   const sections = [
+    { label: "Territory & Category Configuration", description: "Country, Division, District, Area hierarchy & Product Categories", href: "/configuration" },
     { label: "Organization", description: "Business name, address, contact info", href: "/settings/organization" },
     { label: "Store", description: "Store settings, timezone, currency", href: "/settings/store" },
     { label: "Users & Roles", description: "Manage users, roles and permissions", href: "/settings/users" },

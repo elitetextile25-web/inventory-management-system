@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, Users, Truck,
   RotateCcw, Wallet, TrendingUp, Settings, FileText, BarChart2,
   ChevronLeft, ChevronRight, Store, LogOut, Bell, HelpCircle,
-  ClipboardList, DollarSign, Activity, Layers,
+  ClipboardList, DollarSign, Activity, Layers, Sliders,
 } from "lucide-react";
 import { Scissors } from "@/components/ui/fabric-icons";
 import { signOut } from "next-auth/react";
@@ -63,6 +63,7 @@ const NAV_ITEMS = [
   {
     group: "System",
     items: [
+      { label: "Configuration", href: "/configuration", icon: Sliders },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },
