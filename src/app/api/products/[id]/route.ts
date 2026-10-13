@@ -19,6 +19,22 @@ export async function GET(
       where: { id, organizationId },
       include: {
         category: true,
+        subcategory: true,
+        shop: {
+          include: {
+            area: {
+              include: {
+                district: {
+                  include: {
+                    division: {
+                      include: { country: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         brand: true,
         unit: true,
         barcodes: true,
@@ -63,6 +79,33 @@ export async function PATCH(
 
     const body = await req.json();
 
+    // Validate shop if provided
+    if (body.shopId) {
+      const shop = await prisma.shop.findFirst({
+        where: { id: body.shopId, organizationId },
+      });
+      if (!shop) {
+        return NextResponse.json({ error: "Selected shop not found" }, { status: 400 });
+      }
+    }
+
+    // Validate category & subcategory if provided
+    const targetCategoryId = body.categoryId !== undefined ? body.categoryId : existing.categoryId;
+    if (body.subcategoryId) {
+      const sub = await prisma.category.findFirst({
+        where: { id: body.subcategoryId, organizationId },
+      });
+      if (!sub) {
+        return NextResponse.json({ error: "Selected subcategory not found" }, { status: 400 });
+      }
+      if (targetCategoryId && sub.parentId !== targetCategoryId) {
+        return NextResponse.json(
+          { error: "Subcategory does not belong to the selected category" },
+          { status: 400 }
+        );
+      }
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -70,6 +113,8 @@ export async function PATCH(
         sku: body.sku !== undefined ? body.sku.trim() : undefined,
         description: body.description !== undefined ? body.description.trim() : undefined,
         categoryId: body.categoryId !== undefined ? body.categoryId || null : undefined,
+        subcategoryId: body.subcategoryId !== undefined ? body.subcategoryId || null : undefined,
+        shopId: body.shopId !== undefined ? body.shopId || null : undefined,
         brandId: body.brandId !== undefined ? body.brandId || null : undefined,
         unitId: body.unitId !== undefined ? body.unitId || null : undefined,
         purchaseCost: body.purchaseCost !== undefined ? Number(body.purchaseCost) : undefined,

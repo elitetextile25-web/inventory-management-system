@@ -20,6 +20,8 @@ import {
   X,
   Loader2,
   Sparkles,
+  Sliders,
+  FolderTree,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +78,22 @@ const STATIC_ITEMS: SearchItem[] = [
     category: "Navigation",
     icon: LayoutDashboard,
     href: "/dashboard",
+  },
+  {
+    id: "nav-configuration",
+    title: "Store Configuration",
+    subtitle: "Territory hierarchy, general store preferences & system configuration",
+    category: "Navigation",
+    icon: Sliders,
+    href: "/configuration",
+  },
+  {
+    id: "nav-categories-locations",
+    title: "Categories & Locations",
+    subtitle: "Manage parent categories, subcategories, and shop branches",
+    category: "Navigation",
+    icon: FolderTree,
+    href: "/categories-locations",
   },
   {
     id: "nav-products",

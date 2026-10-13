@@ -41,6 +41,7 @@ model Organization {
   divisions Division[]
   districts District[]
   areas     Area[]
+  shops     Shop[]
 
   @@map("organizations")
 }
@@ -53,6 +54,8 @@ model Store {
   address        String?
   phone          String?
   email          String?
+  areaId         String?
+  area           Area?        @relation(fields: [areaId], references: [id])
   isDefault      Boolean      @default(false)
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
@@ -178,7 +181,8 @@ model Category {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  products Product[]
+  products    Product[]  @relation("ProductCategory")
+  subProducts Product[]  @relation("ProductSubcategory")
 
   @@unique([organizationId, name])
   @@map("categories")
@@ -222,11 +226,15 @@ model Product {
   name            String
   description     String?
   categoryId      String?
-  category        Category?    @relation(fields: [categoryId], references: [id])
+  category        Category?    @relation("ProductCategory", fields: [categoryId], references: [id])
+  subcategoryId   String?
+  subcategory     Category?    @relation("ProductSubcategory", fields: [subcategoryId], references: [id])
   brandId         String?
   brand           Brand?       @relation(fields: [brandId], references: [id])
   unitId          String?
   unit            Unit?        @relation(fields: [unitId], references: [id])
+  shopId          String?
+  shop            Shop?        @relation(fields: [shopId], references: [id])
   purchaseCost    Decimal      @default(0) @db.Decimal(15, 4)
   sellingPrice    Decimal      @default(0) @db.Decimal(15, 4)
   minimumStock    Decimal      @default(0) @db.Decimal(15, 4)
@@ -993,6 +1001,31 @@ model Area {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  shops  Shop[]
+  stores Store[]
+
   @@unique([districtId, name])
   @@map("areas")
+}
+
+model Shop {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  areaId         String
+  area           Area         @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  address        String?
+  contactName    String?
+  contactPhone   String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  products Product[]
+
+  @@unique([areaId, name])
+  @@index([organizationId])
+  @@map("shops")
 }

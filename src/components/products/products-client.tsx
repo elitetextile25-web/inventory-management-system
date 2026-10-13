@@ -19,6 +19,8 @@ interface Product {
   sellingPrice: any;
   minimumStock: any;
   category?: { name: string } | null;
+  subcategory?: { name: string } | null;
+  shop?: { name: string } | null;
   brand?: { name: string } | null;
   unit?: { abbreviation: string } | null;
   inventoryBalances?: { quantity: any }[];
@@ -212,7 +214,15 @@ export function ProductsClient({
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{product.sku}</td>
                       <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
-                        {product.category?.name ?? "—"}
+                        <div className="font-medium text-foreground">{product.category?.name ?? "—"}</div>
+                        {product.subcategory && (
+                          <div className="text-xs text-muted-foreground">↳ {product.subcategory.name}</div>
+                        )}
+                        {product.shop && (
+                          <div className="text-[11px] text-primary font-medium flex items-center gap-0.5 mt-0.5">
+                            📍 {product.shop.name}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">{formatCurrency(product.purchaseCost)}</td>
                       <td className="px-4 py-3 text-right">

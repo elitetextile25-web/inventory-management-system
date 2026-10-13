@@ -8,6 +8,8 @@ const ProductSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   description: z.string().optional(),
   categoryId: z.string().optional().nullable(),
+  subcategoryId: z.string().optional().nullable(),
+  shopId: z.string().optional().nullable(),
   brandId: z.string().optional().nullable(),
   unitId: z.string().optional().nullable(),
   purchaseCost: z.coerce.number().min(0, "Purchase cost must be >= 0"),
@@ -31,8 +33,12 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
+    const shopId = searchParams.get("shopId");
+    const categoryId = searchParams.get("categoryId");
 
     const where: any = { organizationId };
+    if (shopId) where.shopId = shopId;
+    if (categoryId) where.categoryId = categoryId;
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -43,11 +49,38 @@ export async function GET(req: Request) {
     const products = await prisma.product.findMany({
       where,
       include: {
-        category: { select: { name: true } },
-        brand: { select: { name: true } },
-        unit: { select: { name: true, abbreviation: true } },
+        category: { select: { id: true, name: true } },
+        subcategory: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        unit: { select: { id: true, name: true, abbreviation: true } },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            area: {
+              select: {
+                id: true,
+                name: true,
+                district: {
+                  select: {
+                    id: true,
+                    name: true,
+                    division: {
+                      select: {
+                        id: true,
+                        name: true,
+                        country: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
-      take: 50,
+      take: 100,
       orderBy: { createdAt: "desc" },
     });
 
@@ -87,6 +120,51 @@ export async function POST(req: Request) {
 
     const data = parsed.data;
 
+    // Server-side validation: Shop relation
+    if (data.shopId) {
+      const shop = await prisma.shop.findFirst({
+        where: { id: data.shopId, organizationId },
+      });
+      if (!shop) {
+        return NextResponse.json(
+          { error: "The selected shop does not exist or does not belong to your organization." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Server-side validation: Category relation
+    if (data.categoryId) {
+      const category = await prisma.category.findFirst({
+        where: { id: data.categoryId, organizationId },
+      });
+      if (!category) {
+        return NextResponse.json(
+          { error: "The selected category does not exist." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Server-side validation: Subcategory relation & category pairing
+    if (data.subcategoryId) {
+      const subcategory = await prisma.category.findFirst({
+        where: { id: data.subcategoryId, organizationId },
+      });
+      if (!subcategory) {
+        return NextResponse.json(
+          { error: "The selected subcategory does not exist." },
+          { status: 400 }
+        );
+      }
+      if (data.categoryId && subcategory.parentId !== data.categoryId) {
+        return NextResponse.json(
+          { error: `The subcategory "${subcategory.name}" does not belong to the selected category.` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check SKU uniqueness
     const existing = await prisma.product.findFirst({
       where: {
@@ -111,6 +189,8 @@ export async function POST(req: Request) {
           name: data.name.trim(),
           description: data.description?.trim() || null,
           categoryId: data.categoryId || null,
+          subcategoryId: data.subcategoryId || null,
+          shopId: data.shopId || null,
           brandId: data.brandId || null,
           unitId: data.unitId || null,
           purchaseCost: data.purchaseCost,

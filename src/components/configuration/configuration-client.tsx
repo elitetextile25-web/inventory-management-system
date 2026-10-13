@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
+  Sliders,
   Globe,
   MapPin,
   FolderTree,
@@ -468,16 +470,23 @@ export function ConfigurationClient() {
         <div>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Layers className="w-5 h-5" />
+              <Sliders className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Configuration</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Store Configuration</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Setup and manage hierarchical geographic territories (Country → Division → District → Area) and product categories.
+            Setup and manage hierarchical geographic territories, store configuration, and category trees.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/categories-locations" className="flex items-center gap-1.5">
+              <FolderTree className="w-3.5 h-3.5 text-primary" />
+              <span>Categories & Locations</span>
+            </Link>
+          </Button>
+
           <Button variant="outline" size="sm" onClick={() => fetchAllData()} disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Refresh

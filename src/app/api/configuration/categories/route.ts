@@ -20,10 +20,14 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
+    const parentId = searchParams.get("parentId");
+    const isRoot = searchParams.get("isRoot");
 
     const categories = await prisma.category.findMany({
       where: {
         organizationId,
+        ...(parentId !== null && parentId !== undefined && parentId !== "" ? { parentId } : {}),
+        ...(isRoot === "true" ? { parentId: null } : {}),
         ...(search
           ? {
               OR: [

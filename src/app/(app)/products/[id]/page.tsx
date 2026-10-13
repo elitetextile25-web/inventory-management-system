@@ -27,6 +27,22 @@ export default async function ProductDetailPage({
     where: { id, organizationId },
     include: {
       category: true,
+      subcategory: true,
+      shop: {
+        include: {
+          area: {
+            include: {
+              district: {
+                include: {
+                  division: {
+                    include: { country: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       brand: true,
       unit: true,
       barcodes: true,
@@ -126,7 +142,15 @@ export default async function ProductDetailPage({
           <CardContent className="space-y-3 text-sm">
             {[
               { label: "Category", value: product.category?.name ?? "—" },
-              { label: "Brand", value: product.brand?.name ?? "—" },
+              { label: "Subcategory", value: product.subcategory?.name ?? "—" },
+              { label: "Shop Branch", value: product.shop?.name ?? "—" },
+              {
+                label: "Territory / Location",
+                value: product.shop?.area
+                  ? `${product.shop.area.name}, ${product.shop.area.district?.name}, ${product.shop.area.district?.division?.name}`
+                  : "—",
+              },
+              { label: "Brand / Mill", value: product.brand?.name ?? "—" },
               { label: "Unit", value: product.unit ? `${product.unit.name} (${product.unit.abbreviation})` : "—" },
               { label: "Tax Rate", value: `${Number(product.taxRate)}%` },
               { label: "Reorder Level", value: formatNumber(Number(product.reorderLevel), 0) },

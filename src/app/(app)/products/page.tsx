@@ -37,6 +37,8 @@ export default async function ProductsPage({
       where,
       include: {
         category: { select: { name: true } },
+        subcategory: { select: { name: true } },
+        shop: { select: { name: true } },
         brand: { select: { name: true } },
         unit: { select: { name: true, abbreviation: true } },
         inventoryBalances: storeId ? { where: { storeId } } : undefined,
