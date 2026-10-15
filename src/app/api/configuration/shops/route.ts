@@ -234,25 +234,21 @@ export async function DELETE(req: Request) {
 
     const shop = await prisma.shop.findFirst({
       where: { id, organizationId },
-      include: {
-        _count: { select: { products: true } },
-      },
     });
 
     if (!shop) {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 });
     }
 
-    if (shop._count.products > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete "${shop.name}" because it has ${shop._count.products} products assigned. Please reassign or remove those products first.`,
-        },
-        { status: 400 }
-      );
-    }
+    await prisma.$transaction(async (tx) => {
+      // Unassign any products attached to this shop
+      await tx.product.updateMany({
+        where: { shopId: id },
+        data: { shopId: null },
+      });
 
-    await prisma.shop.delete({ where: { id } });
+      await tx.shop.delete({ where: { id } });
+    });
 
     return NextResponse.json({ success: true, message: "Shop deleted successfully" });
   } catch (error: any) {

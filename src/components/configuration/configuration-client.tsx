@@ -432,12 +432,12 @@ export function ConfigurationClient() {
 
   // DELETE CATEGORY
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+    if (!confirm(`Are you sure you want to delete category "${name}"? Any subcategories under it will also be deleted, and assigned products will be unlinked.`)) return;
     try {
       const res = await fetch(`/api/configuration/categories?id=${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to delete");
-      toast.success("Category deleted");
+      toast.success("Category deleted successfully");
       fetchAllData();
     } catch (err: any) {
       toast.error(err.message);

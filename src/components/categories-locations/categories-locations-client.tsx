@@ -121,7 +121,7 @@ interface Category {
   description: string | null;
   isActive: boolean;
   children?: { id: string; name: string; isActive: boolean }[];
-  _count?: { products: number; children: number };
+  _count?: { products: number; subProducts?: number; children: number };
 }
 
 export function CategoriesLocationsClient() {
@@ -181,6 +181,15 @@ export function CategoriesLocationsClient() {
   const [selDivision, setSelDivision] = React.useState<string>("");
   const [selDistrict, setSelDistrict] = React.useState<string>("");
   const [selArea, setSelArea] = React.useState<string>("");
+
+  // Delete confirmation modal state
+  const [deleteTarget, setDeleteTarget] = React.useState<{
+    type: "category" | "shop" | "country" | "division" | "district" | "area";
+    id: string;
+    name: string;
+    warnings?: string[];
+  } | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   // Initial Fetch
   const loadAll = async () => {
@@ -320,30 +329,24 @@ export function CategoriesLocationsClient() {
     }
   };
 
-  const handleDeleteCategory = async (cat: Category) => {
-    if ((cat._count?.products || 0) > 0) {
-      toast.error(`Cannot delete "${cat.name}": ${cat._count?.products} products are assigned.`);
-      return;
+  const promptDeleteCategory = (cat: Category) => {
+    const childCount = categories.filter((c) => c.parentId === cat.id).length;
+    const prodCount = (cat._count?.products || 0) + (cat._count?.subProducts || 0);
+
+    const warnings: string[] = [];
+    if (childCount > 0) {
+      warnings.push(`${childCount} subcategory(ies) under this category will also be deleted`);
     }
-    if ((cat._count?.children || 0) > 0) {
-      toast.error(`Cannot delete "${cat.name}": It contains ${cat._count?.children} subcategories.`);
-      return;
+    if (prodCount > 0) {
+      warnings.push(`${prodCount} product(s) assigned will be unassigned (products will not be deleted)`);
     }
 
-    if (!confirm(`Are you sure you want to delete category "${cat.name}"?`)) return;
-
-    try {
-      const res = await fetch(`/api/configuration/categories?id=${cat.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to delete category");
-        return;
-      }
-      toast.success("Category deleted");
-      setCategories((prev) => prev.filter((c) => c.id !== cat.id));
-    } catch {
-      toast.error("Failed to delete category");
-    }
+    setDeleteTarget({
+      type: "category",
+      id: cat.id,
+      name: cat.name,
+      warnings,
+    });
   };
 
   // Toggle Category Status
@@ -438,26 +441,19 @@ export function CategoriesLocationsClient() {
     }
   };
 
-  const handleDeleteShop = async (shop: Shop) => {
-    if ((shop._count?.products || 0) > 0) {
-      toast.error(`Cannot delete "${shop.name}": It has ${shop._count?.products} products assigned.`);
-      return;
+  const promptDeleteShop = (shop: Shop) => {
+    const prodCount = shop._count?.products || 0;
+    const warnings: string[] = [];
+    if (prodCount > 0) {
+      warnings.push(`${prodCount} product(s) assigned to this shop branch will be unassigned`);
     }
 
-    if (!confirm(`Are you sure you want to delete shop "${shop.name}"?`)) return;
-
-    try {
-      const res = await fetch(`/api/configuration/shops?id=${shop.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to delete shop");
-        return;
-      }
-      toast.success("Shop deleted");
-      setShops((prev) => prev.filter((s) => s.id !== shop.id));
-    } catch {
-      toast.error("Failed to delete shop");
-    }
+    setDeleteTarget({
+      type: "shop",
+      id: shop.id,
+      name: shop.name,
+      warnings,
+    });
   };
 
   const handleToggleShopActive = async (shop: Shop) => {
@@ -488,10 +484,10 @@ export function CategoriesLocationsClient() {
       const url = `/api/configuration/geo/${type}s`;
       let payload: any = {};
 
-      if (type === "country") payload = geoCountryForm;
-      if (type === "division") payload = geoDivisionForm;
-      if (type === "district") payload = geoDistrictForm;
-      if (type === "area") payload = geoAreaForm;
+      if (type === "country") payload = { ...geoCountryForm };
+      if (type === "division") payload = { ...geoDivisionForm };
+      if (type === "district") payload = { ...geoDistrictForm };
+      if (type === "area") payload = { ...geoAreaForm };
 
       if (editingGeo) {
         payload.id = editingGeo.id;
@@ -521,19 +517,52 @@ export function CategoriesLocationsClient() {
     }
   };
 
-  const handleDeleteGeo = async (type: "country" | "division" | "district" | "area", item: any) => {
-    if (!confirm(`Are you sure you want to delete ${type} "${item.name}"?`)) return;
+  const promptDeleteGeo = (type: "country" | "division" | "district" | "area", item: any) => {
+    setDeleteTarget({
+      type,
+      id: item.id,
+      name: item.name,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+
     try {
-      const res = await fetch(`/api/configuration/geo/${type}s?id=${item.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || `Failed to delete ${type}`);
-        return;
+      if (deleteTarget.type === "category") {
+        const res = await fetch(`/api/configuration/categories?id=${deleteTarget.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || "Failed to delete category");
+          return;
+        }
+        toast.success(`Category "${deleteTarget.name}" deleted successfully`);
+        setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id && c.parentId !== deleteTarget.id));
+      } else if (deleteTarget.type === "shop") {
+        const res = await fetch(`/api/configuration/shops?id=${deleteTarget.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || "Failed to delete shop");
+          return;
+        }
+        toast.success(`Shop "${deleteTarget.name}" deleted successfully`);
+        setShops((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      } else {
+        const res = await fetch(`/api/configuration/geo/${deleteTarget.type}s?id=${deleteTarget.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || `Failed to delete ${deleteTarget.type}`);
+          return;
+        }
+        toast.success(`${deleteTarget.type.charAt(0).toUpperCase() + deleteTarget.type.slice(1)} deleted successfully`);
+        loadAll();
       }
-      toast.success(`${type} deleted`);
-      loadAll();
+      setDeleteTarget(null);
     } catch {
-      toast.error(`Failed to delete ${type}`);
+      toast.error("Failed to delete item");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -760,7 +789,7 @@ export function CategoriesLocationsClient() {
                               </Badge>
                               {parent._count && (
                                 <span className="text-xs text-muted-foreground font-mono">
-                                  ({parent._count.products} products)
+                                  ({(parent._count.products || 0) + (parent._count.subProducts || 0)} products)
                                 </span>
                               )}
                             </div>
@@ -797,22 +826,17 @@ export function CategoriesLocationsClient() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteCategory(parent)}
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            disabled={(parent._count?.products || 0) > 0 || children.length > 0}
-                            title={
-                              children.length > 0
-                                ? "Cannot delete category with subcategories"
-                                : (parent._count?.products || 0) > 0
-                                ? "Cannot delete category with assigned products"
-                                : "Delete category"
-                            }
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              promptDeleteCategory(parent);
+                            }}
+                            className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                            title={`Delete category "${parent.name}"`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
 
@@ -843,7 +867,7 @@ export function CategoriesLocationsClient() {
                                     </Badge>
                                     {child._count && (
                                       <span className="text-[11px] text-muted-foreground font-mono">
-                                        ({child._count.products} products)
+                                        ({(child._count.products || 0) + (child._count.subProducts || 0)} products)
                                       </span>
                                     )}
                                     {child.description && (
@@ -871,20 +895,17 @@ export function CategoriesLocationsClient() {
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteCategory(child)}
-                                    className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                                    disabled={(child._count?.products || 0) > 0}
-                                    title={
-                                      (child._count?.products || 0) > 0
-                                        ? "Cannot delete: products assigned"
-                                        : "Delete subcategory"
-                                    }
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      promptDeleteCategory(child);
+                                    }}
+                                    className="h-7 w-7 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                                    title={`Delete subcategory "${child.name}"`}
                                   >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             ))}
@@ -1060,20 +1081,17 @@ export function CategoriesLocationsClient() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteShop(shop)}
-                            disabled={(shop._count?.products || 0) > 0}
-                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                            title={
-                              (shop._count?.products || 0) > 0
-                                ? "Cannot delete shop with products"
-                                : "Delete shop"
-                            }
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              promptDeleteShop(shop);
+                            }}
+                            className="h-7 w-7 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                            title={`Delete shop "${shop.name}"`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     </CardContent>
@@ -1375,14 +1393,17 @@ export function CategoriesLocationsClient() {
                               >
                                 <Pencil className="w-3 h-3" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteShop(s)}
-                                className="h-6 w-6 text-destructive"
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDeleteShop(s);
+                                }}
+                                className="h-6 w-6 rounded flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                                title={`Delete shop "${s.name}"`}
                               >
                                 <Trash2 className="w-3 h-3" />
-                              </Button>
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -1453,14 +1474,17 @@ export function CategoriesLocationsClient() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteGeo("country", c)}
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            promptDeleteGeo("country", c);
+                          }}
+                          title={`Delete country "${c.name}"`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1517,14 +1541,17 @@ export function CategoriesLocationsClient() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteGeo("division", d)}
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            promptDeleteGeo("division", d);
+                          }}
+                          title={`Delete division "${d.name}"`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1581,14 +1608,17 @@ export function CategoriesLocationsClient() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteGeo("district", dst)}
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            promptDeleteGeo("district", dst);
+                          }}
+                          title={`Delete district "${dst.name}"`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1645,14 +1675,17 @@ export function CategoriesLocationsClient() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteGeo("area", a)}
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            promptDeleteGeo("area", a);
+                          }}
+                          title={`Delete area "${a.name}"`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -2094,6 +2127,81 @@ export function CategoriesLocationsClient() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* DELETE CONFIRMATION MODAL                                      */}
+      {/* ============================================================== */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-card border border-border/80 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-foreground">
+                  Delete {deleteTarget.type.charAt(0).toUpperCase() + deleteTarget.type.slice(1)}?
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{deleteTarget.name}&quot;</span>?
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {deleteTarget.warnings && deleteTarget.warnings.length > 0 && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 space-y-1.5">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  Please note before deleting:
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 pl-1 opacity-90">
+                  {deleteTarget.warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white gap-1.5 cursor-pointer"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Yes, Delete
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

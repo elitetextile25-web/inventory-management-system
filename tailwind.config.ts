@@ -42,6 +42,10 @@ const config: Config = {
         success: "hsl(var(--color-success))",
         warning: "hsl(var(--color-warning))",
         danger: "hsl(var(--color-danger))",
+        destructive: {
+          DEFAULT: "hsl(var(--color-danger))",
+          foreground: "#ffffff",
+        },
         info: "hsl(var(--color-info))",
       },
       borderRadius: {

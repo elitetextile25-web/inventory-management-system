@@ -47,6 +47,7 @@ export async function GET(req: Request) {
         _count: {
           select: {
             products: true,
+            subProducts: true,
             children: true,
           },
         },
@@ -186,7 +187,7 @@ export async function DELETE(req: Request) {
     const category = await prisma.category.findFirst({
       where: { id, organizationId },
       include: {
-        _count: { select: { products: true, children: true } },
+        children: { select: { id: true } },
       },
     });
 
@@ -194,25 +195,34 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    if (category._count.products > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete "${category.name}" because it is assigned to ${category._count.products} products. Reassign or remove those products first.`,
-        },
-        { status: 400 }
-      );
-    }
+    const childIds = category.children.map((c) => c.id);
+    const allCategoryIds = [id, ...childIds];
 
-    if (category._count.children > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete "${category.name}" because it has ${category._count.children} subcategories. Please reassign or delete subcategories first.`,
-        },
-        { status: 400 }
-      );
-    }
+    await prisma.$transaction(async (tx) => {
+      // 1. Unassign products referencing any of these categories as main category
+      await tx.product.updateMany({
+        where: { categoryId: { in: allCategoryIds } },
+        data: { categoryId: null },
+      });
 
-    await prisma.category.delete({ where: { id } });
+      // 2. Unassign products referencing any of these categories as subcategory
+      await tx.product.updateMany({
+        where: { subcategoryId: { in: allCategoryIds } },
+        data: { subcategoryId: null },
+      });
+
+      // 3. Delete any child subcategories first
+      if (childIds.length > 0) {
+        await tx.category.deleteMany({
+          where: { id: { in: childIds } },
+        });
+      }
+
+      // 4. Delete the category itself
+      await tx.category.delete({
+        where: { id },
+      });
+    });
 
     return NextResponse.json({ success: true, message: "Category deleted successfully" });
   } catch (error: any) {
