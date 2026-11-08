@@ -47,6 +47,8 @@ export default async function PurchaseDetailPage({
     include: {
       supplier: true,
       store: true,
+      purchaseSource: true,
+      storageLocation: true,
       items: {
         include: {
           product: {
@@ -151,18 +153,51 @@ export default async function PurchaseDetailPage({
             {order.supplier.address && (
               <p className="text-muted-foreground mt-0.5">Address: {order.supplier.address}</p>
             )}
+            {order.purchaseSource && (
+              <div className="mt-2 pt-2 border-t border-border">
+                <span className="text-[10px] text-primary font-semibold uppercase block">
+                  Purchase Source (Origin)
+                </span>
+                <Link
+                  href={`/store-management/purchase-sources/${order.purchaseSource.id}`}
+                  className="font-medium text-foreground hover:text-primary transition-colors hover:underline inline-flex items-center gap-1 mt-0.5"
+                >
+                  {order.purchaseSource.sourceName} ({order.purchaseSource.sourceCode})
+                </Link>
+                <p className="text-[11px] text-muted-foreground">
+                  {order.purchaseSource.sourceType} • {order.purchaseSource.country}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="sm:text-right">
             <p className="font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-              Shipping & Delivery
+              Shipping & Storage Location
             </p>
-            <p className="text-muted-foreground">
-              Deliver To:{" "}
-              <span className="font-medium text-foreground">
-                {order.store?.name || "Main Warehouse"}
-              </span>
-            </p>
+            {order.storageLocation ? (
+              <div>
+                <p className="text-muted-foreground">
+                  Destination Storage Location:{" "}
+                  <Link
+                    href={`/store-management/storage-locations/${order.storageLocation.id}`}
+                    className="font-bold text-foreground hover:text-primary transition-colors hover:underline"
+                  >
+                    {order.storageLocation.name}
+                  </Link>
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono">
+                  {order.storageLocation.code} • {order.storageLocation.type}
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">
+                Deliver To:{" "}
+                <span className="font-medium text-foreground">
+                  {order.store?.name || "Main Warehouse"}
+                </span>
+              </p>
+            )}
             <p className="text-muted-foreground mt-0.5">
               Expected Date:{" "}
               <span className="font-medium text-foreground">

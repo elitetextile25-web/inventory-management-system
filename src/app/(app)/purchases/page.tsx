@@ -22,6 +22,9 @@ export default async function PurchasesPage({
     where.OR = [
       { orderNumber: { contains: sp.search, mode: "insensitive" } },
       { supplier: { name: { contains: sp.search, mode: "insensitive" } } },
+      { purchaseSource: { sourceName: { contains: sp.search, mode: "insensitive" } } },
+      { purchaseSource: { sourceCode: { contains: sp.search, mode: "insensitive" } } },
+      { storageLocation: { name: { contains: sp.search, mode: "insensitive" } } },
     ];
   }
   if (sp.status) where.status = sp.status;
@@ -29,7 +32,11 @@ export default async function PurchasesPage({
   const [purchases, total] = await Promise.all([
     prisma.purchaseOrder.findMany({
       where,
-      include: { supplier: { select: { name: true } } },
+      include: {
+        supplier: { select: { name: true } },
+        purchaseSource: { select: { id: true, sourceName: true, sourceCode: true, country: true } },
+        storageLocation: { select: { id: true, name: true, code: true } },
+      },
       orderBy: { orderDate: "desc" },
       skip,
       take: pageSize,

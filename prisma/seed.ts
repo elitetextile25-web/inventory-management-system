@@ -328,7 +328,175 @@ async function main() {
     });
   }
 
-  // 13. Audit Log
+  // 13. Storage Locations
+  const mainWarehouse = await prisma.storageLocation.upsert({
+    where: { organizationId_code: { organizationId: org.id, code: "LOC-000001" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      name: "Narayanganj Main Warehouse",
+      code: "LOC-000001",
+      type: "Main Warehouse",
+      storeManager: "Tanvir Ahmed",
+      contactNumber: "+880 1711 223344",
+      email: "warehouse.nrj@metroretail.com",
+      capacity: 50000,
+      capacityUnit: "Pieces",
+      country: "Bangladesh",
+      division: "Dhaka",
+      district: "Narayanganj",
+      upazila: "Narayanganj Sadar",
+      area: "Chashara",
+      streetRoad: "Station Road, Plot 14",
+      buildingName: "Al-Baraka Logistics Center",
+      floorNumber: "1st & 2nd Floor",
+      fullAddress: "Plot 14, Station Road, Chashara, Narayanganj-1400",
+      description: "Primary distribution and storage hub for all fabric imports and bulk stocks",
+      status: "ACTIVE",
+    },
+  });
+
+  const showroom = await prisma.storageLocation.upsert({
+    where: { organizationId_code: { organizationId: org.id, code: "LOC-000002" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      name: "Dhaka Flagship Showroom",
+      code: "LOC-000002",
+      type: "Showroom",
+      parentWarehouseId: mainWarehouse.id,
+      storeManager: "Farhana Yasmin",
+      contactNumber: "+880 1811 556677",
+      email: "showroom.gulshan@metroretail.com",
+      capacity: 5000,
+      capacityUnit: "Pieces",
+      country: "Bangladesh",
+      division: "Dhaka",
+      district: "Dhaka",
+      upazila: "Gulshan",
+      area: "Gulshan-1",
+      streetRoad: "Road 11, Block D",
+      buildingName: "Avenue Tower",
+      floorNumber: "Ground Floor",
+      fullAddress: "Avenue Tower, Road 11, Gulshan-1, Dhaka-1212",
+      description: "Flagship retail showroom and cutting unit",
+      status: "ACTIVE",
+    },
+  });
+
+  const ctgHub = await prisma.storageLocation.upsert({
+    where: { organizationId_code: { organizationId: org.id, code: "LOC-000003" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      name: "Chittagong Port Distribution Hub",
+      code: "LOC-000003",
+      type: "Distribution Center",
+      storeManager: "Kamal Hossain",
+      contactNumber: "+880 1911 889900",
+      email: "ctg.hub@metroretail.com",
+      capacity: 35000,
+      capacityUnit: "Pieces",
+      country: "Bangladesh",
+      division: "Chittagong",
+      district: "Chittagong",
+      upazila: "Double Mooring",
+      area: "Agrabad C/A",
+      streetRoad: "Sheikh Mujib Road",
+      buildingName: "Port Commercial Complex",
+      floorNumber: "Building B, Ground Floor",
+      fullAddress: "Sheikh Mujib Road, Agrabad C/A, Chittagong-4100",
+      description: "Direct customs clearance and southern distribution center",
+      status: "ACTIVE",
+    },
+  });
+
+  // 14. Purchase Sources
+  const gzFactory = await prisma.purchaseSource.upsert({
+    where: { organizationId_sourceCode: { organizationId: org.id, sourceCode: "SRC-000001" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      sourceName: "ABC Clothing Factory",
+      sourceCode: "SRC-000001",
+      sourceType: "Manufacturer / Factory",
+      supplierName: "ABC Garments & Textiles Ltd.",
+      contactPerson: "Mr. Chen Wei",
+      phoneNumber: "+86 20 8123 4567",
+      whatsappNumber: "+86 138 0000 1111",
+      emailAddress: "sales@abc-clothing-gz.com",
+      website: "https://abc-clothing-gz.com",
+      country: "China",
+      division: "Guangdong",
+      city: "Guangzhou",
+      areaStreet: "Panyu Industrial Park, Road 8",
+      buildingName: "Building 4, ABC Manufacturing Complex",
+      fullAddress: "Building 4, Panyu Industrial Park, Guangzhou, Guangdong, China",
+      preferredCurrency: "CNY",
+      paymentTerms: "30% Advance, 70% LC upon Bill of Lading",
+      supplierNotes: "High-grade combed cotton fabrics and knitwear manufacturing",
+      additionalDescription: "Direct manufacturing partner in Guangzhou",
+      status: "ACTIVE",
+    },
+  });
+
+  const islampurWholesale = await prisma.purchaseSource.upsert({
+    where: { organizationId_sourceCode: { organizationId: org.id, sourceCode: "SRC-000002" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      sourceName: "Islampur Textile Wholesale Hub",
+      sourceCode: "SRC-000002",
+      sourceType: "Wholesale Market Stall",
+      supplierName: "Bismillah Fabric Traders",
+      contactPerson: "Haji Nurul Islam",
+      phoneNumber: "+880 1712 345678",
+      whatsappNumber: "+880 1712 345678",
+      emailAddress: "bismillah.islampur@gmail.com",
+      country: "Bangladesh",
+      division: "Dhaka",
+      district: "Dhaka",
+      upazila: "Kotwali",
+      marketName: "Ahsanullah Cloth Market",
+      areaStreet: "Islampur Road",
+      buildingName: "Ahsanullah Plaza",
+      shopNumber: "Stall #42-43",
+      fullAddress: "Stall #42-43, Ahsanullah Plaza, Islampur Road, Kotwali, Dhaka-1100",
+      preferredCurrency: "BDT",
+      paymentTerms: "Immediate Cash / 15-day Credit",
+      supplierNotes: "Local wholesale source for cotton poplin, voile, and linen",
+      status: "ACTIVE",
+    },
+  });
+
+  const suratMills = await prisma.purchaseSource.upsert({
+    where: { organizationId_sourceCode: { organizationId: org.id, sourceCode: "SRC-000003" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      sourceName: "Surat Silk & Rayon Mills",
+      sourceCode: "SRC-000003",
+      sourceType: "Manufacturer / Factory",
+      supplierName: "Surat Synthetic Textiles Corp.",
+      contactPerson: "Rajesh Patel",
+      phoneNumber: "+91 261 234 5678",
+      whatsappNumber: "+91 982 500 1234",
+      emailAddress: "export@suratsilkmills.in",
+      website: "https://suratsilkmills.in",
+      country: "India",
+      division: "Gujarat",
+      city: "Surat",
+      areaStreet: "Ring Road Textile Market, Sector 2",
+      buildingName: "Mill Compound 12",
+      fullAddress: "Plot 12, Ring Road Textile Market, Surat, Gujarat-395002, India",
+      preferredCurrency: "USD",
+      paymentTerms: "TT / Irrevocable LC at Sight",
+      supplierNotes: "Specialist in georgette, chiffon, and jacquard weaving",
+      status: "ACTIVE",
+    },
+  });
+
+  // 15. Audit Log
   await prisma.auditLog.create({
     data: {
       organizationId: org.id,
@@ -337,7 +505,7 @@ async function main() {
       action: "SYSTEM_INITIALIZE",
       entityType: "ORGANIZATION",
       entityId: org.id,
-      newValues: { note: "Initialized InventoryPro demo workspace with default catalog, users, and stock" },
+      newValues: { note: "Initialized InventoryPro demo workspace with default catalog, storage locations, purchase sources, users, and stock" },
     },
   });
 

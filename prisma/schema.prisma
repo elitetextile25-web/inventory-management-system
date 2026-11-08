@@ -42,6 +42,9 @@ model Organization {
   districts District[]
   areas     Area[]
   shops     Shop[]
+  purchaseSources  PurchaseSource[]
+  storageLocations StorageLocation[]
+  stockTransfers   StockTransfer[]
 
   @@map("organizations")
 }
@@ -256,6 +259,9 @@ model Product {
   supplierProducts  SupplierProduct[]
   stockAdjustmentItems StockAdjustmentItem[]
   stockCountItems   StockCountItem[]
+  storageBalances   StorageInventoryBalance[]
+  storageMovements  StorageStockMovement[]
+  stockTransferItems StockTransferItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId, status])
@@ -523,6 +529,10 @@ model PurchaseOrder {
   store          Store         @relation(fields: [storeId], references: [id])
   supplierId     String
   supplier       Supplier      @relation(fields: [supplierId], references: [id])
+  purchaseSourceId  String?
+  purchaseSource    PurchaseSource?  @relation(fields: [purchaseSourceId], references: [id])
+  storageLocationId String?
+  storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   orderNumber    String
   orderDate      DateTime      @default(now())
   expectedDate   DateTime?
@@ -1028,4 +1038,183 @@ model Shop {
   @@unique([areaId, name])
   @@index([organizationId])
   @@map("shops")
+}
+
+// ==========================================
+// STORE & SOURCE MANAGEMENT MODULE
+// ==========================================
+
+model PurchaseSource {
+  id                    String         @id @default(cuid())
+  organizationId        String
+  organization          Organization   @relation(fields: [organizationId], references: [id])
+  sourceName            String
+  sourceCode            String
+  sourceType            String         // Manufacturer / Factory, Wholesale Shop, Wholesale Market Stall, Distributor, Importer, Local Supplier, Retail Shop, Online Supplier, Other
+  supplierName          String?        // Supplier/Shop/Factory Name
+  contactPerson         String?
+  phoneNumber           String?
+  whatsappNumber        String?
+  emailAddress          String?
+  website               String?
+
+  // Location fields
+  country               String         // Required
+  division              String?        // Division / State / Province
+  city                  String?
+  district              String?
+  upazila               String?        // Upazila / Subdistrict
+  marketName            String?
+  areaStreet            String?
+  buildingName          String?
+  shopNumber            String?        // Shop Number / Stall Number
+  fullAddress           String?
+  googleMapsLocation    String?
+
+  // Business Information
+  preferredCurrency     String         @default("BDT")
+  paymentTerms          String?
+  supplierNotes         String?
+  additionalDescription String?
+  status                String         @default("ACTIVE") // ACTIVE / INACTIVE
+
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  purchaseOrders        PurchaseOrder[]
+
+  @@unique([organizationId, sourceCode])
+  @@index([organizationId, status])
+  @@index([organizationId, sourceType])
+  @@map("purchase_sources")
+}
+
+model StorageLocation {
+  id                 String           @id @default(cuid())
+  organizationId     String
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  name               String           // Store Name (required)
+  code               String           // Store Code (auto-generated)
+  type               String           // Main Warehouse, Branch Warehouse, Showroom, Retail Shop, Factory, Small Storage Room, Temporary Storage, Distribution Center, Other
+  storeManager       String?
+  contactNumber      String?
+  email              String?
+  parentWarehouseId  String?
+  parentWarehouse    StorageLocation? @relation("WarehouseHierarchy", fields: [parentWarehouseId], references: [id])
+  childWarehouses    StorageLocation[] @relation("WarehouseHierarchy")
+  capacity           Decimal?         @db.Decimal(15, 2)
+  capacityUnit       String?          // Pieces, Boxes, Cartons, KG, Rolls, etc.
+
+  // Location fields
+  country            String?
+  division           String?
+  district           String?
+  upazila            String?
+  area               String?
+  streetRoad         String?
+  buildingName       String?
+  floorNumber        String?
+  fullAddress        String?
+  googleMapsLocation String?
+
+  // Additional Information
+  description        String?
+  notes              String?
+  status             String           @default("ACTIVE") // ACTIVE / INACTIVE
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  purchaseOrders     PurchaseOrder[]
+  inventoryBalances  StorageInventoryBalance[]
+  stockMovements     StorageStockMovement[]
+  transfersFrom      StockTransfer[]  @relation("SourceStorageLocation")
+  transfersTo        StockTransfer[]  @relation("DestinationStorageLocation")
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([organizationId, type])
+  @@map("storage_locations")
+}
+
+model StorageInventoryBalance {
+  id                String          @id @default(cuid())
+  storageLocationId String
+  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity          Decimal         @default(0) @db.Decimal(15, 4)
+  averageCost       Decimal         @default(0) @db.Decimal(15, 4)
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([storageLocationId, productId])
+  @@index([storageLocationId])
+  @@index([productId])
+  @@map("storage_inventory_balances")
+}
+
+model StorageStockMovement {
+  id                String          @id @default(cuid())
+  storageLocationId String
+  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type              StockMovementType
+  quantity          Decimal         @db.Decimal(15, 4)
+  unitCost          Decimal         @default(0) @db.Decimal(15, 4)
+  referenceType     String?
+  referenceId       String?
+  notes             String?
+  createdAt         DateTime        @default(now())
+  createdBy         String?
+
+  @@index([storageLocationId, productId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("storage_stock_movements")
+}
+
+enum StockTransferStatus {
+  DRAFT
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model StockTransfer {
+  id                    String              @id @default(cuid())
+  organizationId        String
+  organization          Organization        @relation(fields: [organizationId], references: [id])
+  transferNumber        String
+  sourceLocationId      String
+  sourceLocation        StorageLocation     @relation("SourceStorageLocation", fields: [sourceLocationId], references: [id])
+  destinationLocationId String
+  destinationLocation   StorageLocation     @relation("DestinationStorageLocation", fields: [destinationLocationId], references: [id])
+  transferDate          DateTime            @default(now())
+  status                StockTransferStatus @default(COMPLETED)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  createdBy             String?
+
+  items                 StockTransferItem[]
+
+  @@unique([organizationId, transferNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, transferDate])
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id              String        @id @default(cuid())
+  stockTransferId String
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Decimal       @db.Decimal(15, 4)
+  unitCost        Decimal       @default(0) @db.Decimal(15, 4)
+  notes           String?
+
+  @@index([stockTransferId])
+  @@index([productId])
+  @@map("stock_transfer_items")
 }

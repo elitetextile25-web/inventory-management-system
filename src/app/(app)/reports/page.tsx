@@ -17,6 +17,9 @@ const REPORTS = [
   { name: "Cash Register", href: "/reports/cash", description: "Cash account transactions", icon: "💰" },
   { name: "Tax Summary", href: "/reports/tax", description: "Tax collected and paid", icon: "🧾" },
   { name: "Product Sales", href: "/reports/product-sales", description: "Top selling products", icon: "🏆" },
+  { name: "Storage Locations & Stock", href: "/store-management/storage-locations", description: "Warehouse balances, showroom stock & capacity", icon: "🏢" },
+  { name: "Purchase Sources & Origins", href: "/store-management/purchase-sources", description: "Sourcing volumes by country, factory & market", icon: "📍" },
+  { name: "Inter-Warehouse Transfers", href: "/store-management/transfers", description: "Stock transfers between storage locations", icon: "🔄" },
   { name: "Audit Log", href: "/audit", description: "Full audit trail of all actions", icon: "🔍" },
 ];
 

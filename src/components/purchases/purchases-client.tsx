@@ -48,17 +48,41 @@ export function PurchasesClient({ purchases, total, page, pageSize }: any) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border">
-              {["Order #","Supplier","Date","Total","Paid","Due","Status","Actions"].map(h => (
+              {["Order #", "Supplier / Source", "Destination Location", "Date", "Total", "Paid", "Due", "Status", "Actions"].map(h => (
                 <th key={h} className={`px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider ${["Total","Paid","Due"].includes(h) ? "text-right" : h === "Status" ? "text-center" : h === "Actions" ? "text-right" : "text-left"}`}>{h}</th>
               ))}
             </tr></thead>
             <tbody className="divide-y divide-border">
               {purchases.length === 0 ? (
-                <tr><td colSpan={8}><EmptyState icon={<ShoppingCart className="w-12 h-12" />} title="No purchases found" action={<Button size="sm" asChild><Link href="/purchases/new"><Plus className="w-4 h-4" />New Purchase</Link></Button>} /></td></tr>
+                <tr><td colSpan={9}><EmptyState icon={<ShoppingCart className="w-12 h-12" />} title="No purchases found" action={<Button size="sm" asChild><Link href="/purchases/new"><Plus className="w-4 h-4" />New Purchase</Link></Button>} /></td></tr>
               ) : purchases.map((p: any) => (
                 <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">{p.orderNumber}</td>
-                  <td className="px-4 py-3">{p.supplier?.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-foreground">{p.supplier?.name}</div>
+                    {p.purchaseSource && (
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <span className="font-mono text-primary bg-primary/10 px-1 py-0.2 rounded text-[10px]">
+                          {p.purchaseSource.sourceCode}
+                        </span>
+                        <span className="truncate max-w-[140px]">{p.purchaseSource.sourceName}</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.storageLocation ? (
+                      <div>
+                        <span className="font-medium text-foreground text-xs block">
+                          {p.storageLocation.name}
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {p.storageLocation.code}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Default Store</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(p.orderDate)}</td>
                   <td className="px-4 py-3 text-right font-semibold">{formatCurrency(p.grandTotal)}</td>
                   <td className="px-4 py-3 text-right text-success">{formatCurrency(p.paidAmount)}</td>

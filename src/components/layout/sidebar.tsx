@@ -9,7 +9,7 @@ import {
   RotateCcw, Wallet, TrendingUp, Settings, FileText, BarChart2,
   ChevronLeft, ChevronRight, Store, LogOut, Bell, HelpCircle,
   ClipboardList, DollarSign, Activity, Layers, Sliders, MapPin,
-  FolderTree,
+  FolderTree, Warehouse, ArrowLeftRight, Building2,
 } from "lucide-react";
 import { Scissors } from "@/components/ui/fabric-icons";
 import { signOut } from "next-auth/react";
@@ -21,6 +21,14 @@ const NAV_ITEMS = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Store Configuration", href: "/configuration", icon: Sliders },
       { label: "Categories & Locations", href: "/categories-locations", icon: FolderTree },
+    ],
+  },
+  {
+    group: "Store Management",
+    items: [
+      { label: "Purchase Sources", href: "/store-management/purchase-sources", icon: MapPin },
+      { label: "Storage Locations", href: "/store-management/storage-locations", icon: Warehouse },
+      { label: "Stock Transfers", href: "/store-management/transfers", icon: ArrowLeftRight },
     ],
   },
   {

@@ -409,3 +409,129 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
     "storeId" VARCHAR(64),
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================================
+-- 19. STORE & SOURCE MANAGEMENT MODULE
+-- ============================================================================
+
+-- Purchase Sources
+CREATE TABLE IF NOT EXISTS "purchase_sources" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "organizationId" VARCHAR(64) NOT NULL REFERENCES "organizations"("id") ON DELETE CASCADE,
+    "sourceName" VARCHAR(255) NOT NULL,
+    "sourceCode" VARCHAR(100) NOT NULL,
+    "sourceType" VARCHAR(100) NOT NULL,
+    "supplierName" VARCHAR(255),
+    "contactPerson" VARCHAR(255),
+    "phoneNumber" VARCHAR(100),
+    "whatsappNumber" VARCHAR(100),
+    "emailAddress" VARCHAR(255),
+    "website" VARCHAR(255),
+    "country" VARCHAR(100) NOT NULL,
+    "division" VARCHAR(100),
+    "city" VARCHAR(100),
+    "district" VARCHAR(100),
+    "upazila" VARCHAR(100),
+    "marketName" VARCHAR(255),
+    "areaStreet" VARCHAR(255),
+    "buildingName" VARCHAR(255),
+    "shopNumber" VARCHAR(100),
+    "fullAddress" TEXT,
+    "googleMapsLocation" TEXT,
+    "preferredCurrency" VARCHAR(20) DEFAULT 'BDT',
+    "paymentTerms" VARCHAR(255),
+    "supplierNotes" TEXT,
+    "additionalDescription" TEXT,
+    "status" VARCHAR(50) DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "purchase_sources_org_code_uniq" UNIQUE ("organizationId", "sourceCode")
+);
+
+-- Storage Locations
+CREATE TABLE IF NOT EXISTS "storage_locations" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "organizationId" VARCHAR(64) NOT NULL REFERENCES "organizations"("id") ON DELETE CASCADE,
+    "name" VARCHAR(255) NOT NULL,
+    "code" VARCHAR(100) NOT NULL,
+    "type" VARCHAR(100) NOT NULL,
+    "storeManager" VARCHAR(255),
+    "contactNumber" VARCHAR(100),
+    "email" VARCHAR(255),
+    "parentWarehouseId" VARCHAR(64) REFERENCES "storage_locations"("id") ON DELETE SET NULL,
+    "capacity" NUMERIC(15, 2),
+    "capacityUnit" VARCHAR(50),
+    "country" VARCHAR(100),
+    "division" VARCHAR(100),
+    "district" VARCHAR(100),
+    "upazila" VARCHAR(100),
+    "area" VARCHAR(100),
+    "streetRoad" VARCHAR(255),
+    "buildingName" VARCHAR(255),
+    "floorNumber" VARCHAR(50),
+    "fullAddress" TEXT,
+    "googleMapsLocation" TEXT,
+    "description" TEXT,
+    "notes" TEXT,
+    "status" VARCHAR(50) DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "storage_locations_org_code_uniq" UNIQUE ("organizationId", "code")
+);
+
+-- Storage Inventory Balances
+CREATE TABLE IF NOT EXISTS "storage_inventory_balances" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "storageLocationId" VARCHAR(64) NOT NULL REFERENCES "storage_locations"("id") ON DELETE CASCADE,
+    "productId" VARCHAR(64) NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+    "quantity" NUMERIC(15, 4) DEFAULT 0,
+    "averageCost" NUMERIC(15, 4) DEFAULT 0,
+    "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "storage_inventory_balance_loc_prod_uniq" UNIQUE ("storageLocationId", "productId")
+);
+
+-- Storage Stock Movements
+CREATE TABLE IF NOT EXISTS "storage_stock_movements" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "storageLocationId" VARCHAR(64) NOT NULL REFERENCES "storage_locations"("id") ON DELETE CASCADE,
+    "productId" VARCHAR(64) NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+    "type" VARCHAR(50) NOT NULL,
+    "quantity" NUMERIC(15, 4) NOT NULL,
+    "unitCost" NUMERIC(15, 4) DEFAULT 0,
+    "referenceType" VARCHAR(50),
+    "referenceId" VARCHAR(64),
+    "notes" TEXT,
+    "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "createdBy" VARCHAR(64)
+);
+
+-- Stock Transfers
+CREATE TABLE IF NOT EXISTS "stock_transfers" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "organizationId" VARCHAR(64) NOT NULL REFERENCES "organizations"("id") ON DELETE CASCADE,
+    "transferNumber" VARCHAR(100) NOT NULL,
+    "sourceLocationId" VARCHAR(64) NOT NULL REFERENCES "storage_locations"("id") ON DELETE RESTRICT,
+    "destinationLocationId" VARCHAR(64) NOT NULL REFERENCES "storage_locations"("id") ON DELETE RESTRICT,
+    "transferDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "status" VARCHAR(50) DEFAULT 'COMPLETED',
+    "notes" TEXT,
+    "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "createdBy" VARCHAR(64),
+    CONSTRAINT "stock_transfers_org_number_uniq" UNIQUE ("organizationId", "transferNumber")
+);
+
+-- Stock Transfer Items
+CREATE TABLE IF NOT EXISTS "stock_transfer_items" (
+    "id" VARCHAR(64) PRIMARY KEY,
+    "stockTransferId" VARCHAR(64) NOT NULL REFERENCES "stock_transfers"("id") ON DELETE CASCADE,
+    "productId" VARCHAR(64) NOT NULL REFERENCES "products"("id") ON DELETE RESTRICT,
+    "quantity" NUMERIC(15, 4) NOT NULL,
+    "unitCost" NUMERIC(15, 4) DEFAULT 0,
+    "notes" TEXT
+);
+
+-- Alter purchase_orders to add purchaseSourceId and storageLocationId
+ALTER TABLE "purchase_orders" ADD COLUMN IF NOT EXISTS "purchaseSourceId" VARCHAR(64) REFERENCES "purchase_sources"("id") ON DELETE SET NULL;
+ALTER TABLE "purchase_orders" ADD COLUMN IF NOT EXISTS "storageLocationId" VARCHAR(64) REFERENCES "storage_locations"("id") ON DELETE SET NULL;
+

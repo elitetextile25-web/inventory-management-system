@@ -27,6 +27,13 @@ export default async function InventoryPage({
       where: { ...where, status: "ACTIVE" },
       include: {
         inventoryBalances: storeId ? { where: { storeId } } : { take: 1 },
+        storageBalances: {
+          include: {
+            storageLocation: {
+              select: { id: true, name: true, code: true },
+            },
+          },
+        },
         unit: { select: { abbreviation: true } },
         category: { select: { name: true } },
       },

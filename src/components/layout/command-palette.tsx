@@ -22,6 +22,9 @@ import {
   Sparkles,
   Sliders,
   FolderTree,
+  Warehouse,
+  MapPin,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,8 +72,59 @@ const STATIC_ITEMS: SearchItem[] = [
     href: "/purchases",
     badge: "Stock In",
   },
+  {
+    id: "action-new-source",
+    title: "Add Purchase Source",
+    subtitle: "Register textile mill, factory, or wholesale market stall",
+    category: "Quick Actions",
+    icon: MapPin,
+    href: "/store-management/purchase-sources/new",
+    badge: "Source",
+  },
+  {
+    id: "action-new-location",
+    title: "Add Storage Location",
+    subtitle: "Register warehouse, branch, or showroom storage",
+    category: "Quick Actions",
+    icon: Warehouse,
+    href: "/store-management/storage-locations/new",
+    badge: "Location",
+  },
+  {
+    id: "action-transfer",
+    title: "Stock Transfer Between Locations",
+    subtitle: "Move inventory between warehouses and stores",
+    category: "Quick Actions",
+    icon: ArrowLeftRight,
+    href: "/store-management/transfers/new",
+    badge: "Transfer",
+  },
 
   // Navigation
+  {
+    id: "nav-store-management",
+    title: "Store Management Hub",
+    subtitle: "Overview of all purchase sources, warehouses & locations",
+    category: "Navigation",
+    icon: Warehouse,
+    href: "/store-management",
+  },
+  {
+    id: "nav-purchase-sources",
+    title: "Purchase Sources",
+    subtitle: "Track where fabrics & products are sourced or purchased",
+    category: "Navigation",
+    icon: MapPin,
+    href: "/store-management/purchase-sources",
+  },
+  {
+    id: "nav-storage-locations",
+    title: "Storage Locations",
+    subtitle: "Physical warehouses, storage rooms, and showrooms",
+    category: "Navigation",
+    icon: Warehouse,
+    href: "/store-management/storage-locations",
+  },
   {
     id: "nav-dashboard",
     title: "Dashboard Overview",

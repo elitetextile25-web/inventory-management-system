@@ -18,6 +18,8 @@ import {
   FileText,
   Loader2,
   AlertCircle,
+  MapPin,
+  Warehouse,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,10 +42,29 @@ interface Supplier {
   phone?: string | null;
 }
 
+interface PurchaseSourceOption {
+  id: string;
+  sourceName: string;
+  sourceCode: string;
+  sourceType: string;
+  country: string;
+}
+
+interface StorageLocationOption {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+}
+
 interface NewPurchaseClientProps {
   products: Product[];
   suppliers: Supplier[];
+  purchaseSources?: PurchaseSourceOption[];
+  storageLocations?: StorageLocationOption[];
   defaultOrderNumber: string;
+  initialSourceId?: string;
+  initialLocationId?: string;
 }
 
 interface PurchaseLineItem {
@@ -61,7 +82,11 @@ interface PurchaseLineItem {
 export function NewPurchaseClient({
   products,
   suppliers,
+  purchaseSources = [],
+  storageLocations = [],
   defaultOrderNumber,
+  initialSourceId,
+  initialLocationId,
 }: NewPurchaseClientProps) {
   const router = useRouter();
 
@@ -69,6 +94,12 @@ export function NewPurchaseClient({
   const [orderDate, setOrderDate] = React.useState(new Date().toISOString().split("T")[0]);
   const [expectedDate, setExpectedDate] = React.useState("");
   const [supplierId, setSupplierId] = React.useState(suppliers[0]?.id || "");
+  const [purchaseSourceId, setPurchaseSourceId] = React.useState(
+    initialSourceId || purchaseSources[0]?.id || ""
+  );
+  const [storageLocationId, setStorageLocationId] = React.useState(
+    initialLocationId || storageLocations[0]?.id || ""
+  );
   const [shippingCost, setShippingCost] = React.useState<number>(0);
   const [overallDiscount, setOverallDiscount] = React.useState<number>(0);
   const [paidAmount, setPaidAmount] = React.useState<string>("");
@@ -169,6 +200,8 @@ export function NewPurchaseClient({
     try {
       const payload = {
         supplierId,
+        purchaseSourceId: purchaseSourceId || null,
+        storageLocationId: storageLocationId || null,
         orderNumber,
         orderDate,
         expectedDate: expectedDate || null,
@@ -339,6 +372,77 @@ export function NewPurchaseClient({
           </CardContent>
         </Card>
       </div>
+
+      {/* Store & Source Routing Card */}
+      <Card className="border-primary/20 bg-primary/[0.02]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" /> Purchase Source & Destination Storage Location
+            </span>
+            <div className="flex items-center gap-3 text-xs">
+              <Link
+                href="/store-management/purchase-sources/new"
+                className="text-primary font-medium hover:underline flex items-center gap-1"
+              >
+                + New Source
+              </Link>
+              <span>•</span>
+              <Link
+                href="/store-management/storage-locations/new"
+                className="text-primary font-medium hover:underline flex items-center gap-1"
+              >
+                + New Storage Location
+              </Link>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-medium text-foreground mb-1 flex items-center justify-between">
+              <span>Purchase Source (Origin)</span>
+              <span className="text-[10px] text-muted-foreground">Where products are bought</span>
+            </label>
+            <select
+              value={purchaseSourceId}
+              onChange={(e) => setPurchaseSourceId(e.target.value)}
+              className="w-full h-9 rounded-lg border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring font-medium"
+            >
+              <option value="">None / Direct Supplier</option>
+              {purchaseSources.map((ps) => (
+                <option key={ps.id} value={ps.id}>
+                  {ps.sourceName} ({ps.sourceCode} - {ps.sourceType}, {ps.country})
+                </option>
+              ))}
+            </select>
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              Tracks sourcing origin (e.g. ABC Clothing Factory, Guangzhou or Islampur Market Stall)
+            </span>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-foreground mb-1 flex items-center justify-between">
+              <span>Destination Storage Location (Stock In)</span>
+              <span className="text-[10px] text-muted-foreground">Where goods are stored</span>
+            </label>
+            <select
+              value={storageLocationId}
+              onChange={(e) => setStorageLocationId(e.target.value)}
+              className="w-full h-9 rounded-lg border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring font-medium"
+            >
+              <option value="">Default Store Stock</option>
+              {storageLocations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name} ({loc.code} - {loc.type})
+                </option>
+              ))}
+            </select>
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              Inventory will automatically increase at this warehouse upon confirming receipt
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Items Card */}
       <Card>

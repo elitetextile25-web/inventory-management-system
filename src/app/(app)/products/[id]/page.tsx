@@ -49,6 +49,13 @@ export default async function ProductDetailPage({
       inventoryBalances: {
         include: { store: { select: { name: true } } },
       },
+      storageBalances: {
+        include: {
+          storageLocation: {
+            select: { id: true, name: true, code: true, type: true },
+          },
+        },
+      },
     },
   });
 
@@ -215,6 +222,54 @@ export default async function ProductDetailPage({
                       <div className="text-right">
                         <span className="font-semibold">{formatNumber(Number(b.quantity), 2)}</span>
                         <span className="text-muted-foreground ml-1 text-xs">{product.unit?.abbreviation}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Stock by Storage Location */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Package className="w-4 h-4 text-primary" /> Stock by Storage Location
+                </CardTitle>
+                <Link
+                  href="/store-management/transfers/new"
+                  className="text-xs text-primary font-medium hover:underline"
+                >
+                  Transfer →
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {product.storageBalances.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No storage location stock records yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {product.storageBalances.map((sb) => (
+                    <div key={sb.id} className="flex items-center justify-between text-sm">
+                      <div>
+                        <Link
+                          href={`/store-management/storage-locations/${sb.storageLocation.id}`}
+                          className="text-foreground font-medium hover:text-primary hover:underline"
+                        >
+                          {sb.storageLocation.name}
+                        </Link>
+                        <span className="text-xs text-muted-foreground block font-mono">
+                          {sb.storageLocation.code} • {sb.storageLocation.type}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-foreground">
+                          {formatNumber(Number(sb.quantity), 2)}
+                        </span>
+                        <span className="text-muted-foreground ml-1 text-xs">
+                          {product.unit?.abbreviation}
+                        </span>
                       </div>
                     </div>
                   ))}

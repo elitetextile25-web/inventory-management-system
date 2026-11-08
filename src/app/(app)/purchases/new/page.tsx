@@ -8,12 +8,17 @@ export const metadata = {
   description: "Record a new fabric purchase or mill order",
 };
 
-export default async function NewPurchasePage() {
+export default async function NewPurchasePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ sourceId?: string; locationId?: string }>;
+}) {
   const session = await auth();
   const organizationId = (session?.user as any)?.organizationId;
   const storeId = (session?.user as any)?.storeId;
+  const sp = searchParams ? await searchParams : {};
 
-  const [products, suppliers, orderCount] = await Promise.all([
+  const [products, suppliers, purchaseSources, storageLocations, orderCount] = await Promise.all([
     prisma.product.findMany({
       where: { organizationId, status: "ACTIVE" },
       include: {
@@ -25,6 +30,16 @@ export default async function NewPurchasePage() {
     prisma.supplier.findMany({
       where: { organizationId, isActive: true },
       select: { id: true, name: true, company: true, phone: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.purchaseSource.findMany({
+      where: { organizationId, status: "ACTIVE" },
+      select: { id: true, sourceName: true, sourceCode: true, sourceType: true, country: true },
+      orderBy: { sourceName: "asc" },
+    }),
+    prisma.storageLocation.findMany({
+      where: { organizationId, status: "ACTIVE" },
+      select: { id: true, name: true, code: true, type: true },
       orderBy: { name: "asc" },
     }),
     prisma.purchaseOrder.count({
@@ -40,7 +55,11 @@ export default async function NewPurchasePage() {
     <NewPurchaseClient
       products={serializeData(products) as any}
       suppliers={serializeData(suppliers) as any}
+      purchaseSources={serializeData(purchaseSources) as any}
+      storageLocations={serializeData(storageLocations) as any}
       defaultOrderNumber={defaultOrderNumber}
+      initialSourceId={sp?.sourceId}
+      initialLocationId={sp?.locationId}
     />
   );
 }

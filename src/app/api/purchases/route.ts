@@ -16,6 +16,8 @@ const PurchaseItemSchema = z.object({
 
 const CreatePurchaseSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required"),
+  purchaseSourceId: z.string().optional().nullable(),
+  storageLocationId: z.string().optional().nullable(),
   orderNumber: z.string().min(1, "Order number is required"),
   orderDate: z.string().optional(),
   expectedDate: z.string().optional().nullable(),
@@ -99,6 +101,8 @@ export async function POST(req: Request) {
         data: {
           storeId,
           supplierId: validated.supplierId,
+          purchaseSourceId: validated.purchaseSourceId || null,
+          storageLocationId: validated.storageLocationId || null,
           orderNumber: orderNum,
           orderDate: validated.orderDate ? new Date(validated.orderDate) : new Date(),
           expectedDate: validated.expectedDate ? new Date(validated.expectedDate) : null,
@@ -128,6 +132,8 @@ export async function POST(req: Request) {
         include: {
           items: true,
           supplier: true,
+          purchaseSource: true,
+          storageLocation: true,
         },
       });
 
@@ -182,6 +188,41 @@ export async function POST(req: Request) {
               createdBy: userId || null,
             },
           });
+
+          // Also increment stock at the destination storage location if specified
+          if (validated.storageLocationId) {
+            await tx.storageInventoryBalance.upsert({
+              where: {
+                storageLocationId_productId: {
+                  storageLocationId: validated.storageLocationId,
+                  productId: item.productId,
+                },
+              },
+              update: {
+                quantity: { increment: item.quantity },
+              },
+              create: {
+                storageLocationId: validated.storageLocationId,
+                productId: item.productId,
+                quantity: item.quantity,
+                averageCost: item.unitCost,
+              },
+            });
+
+            await tx.storageStockMovement.create({
+              data: {
+                storageLocationId: validated.storageLocationId,
+                productId: item.productId,
+                type: "PURCHASE_RECEIPT",
+                quantity: item.quantity,
+                unitCost: item.unitCost,
+                referenceType: "PURCHASE",
+                referenceId: createdOrder.id,
+                notes: `PO ${orderNum} received into storage location`,
+                createdBy: userId || null,
+              },
+            });
+          }
         }
       }
 

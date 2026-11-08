@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, Layers, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,9 +35,16 @@ export function InventoryClient({ products, total, page, pageSize, storeId }: an
           <h1 className="text-2xl font-bold">Inventory</h1>
           <p className="text-sm text-muted-foreground">{total} active products · Stock value: {formatCurrency(totalValue)}</p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => router.push("/inventory/adjustments")}>
-          Stock Adjustment
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/store-management/transfers">
+              Transfer Stock
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => router.push("/inventory/adjustments")}>
+            Stock Adjustment
+          </Button>
+        </div>
       </div>
       <Card><CardContent className="p-4">
         <div className="relative">
@@ -65,7 +73,21 @@ export function InventoryClient({ products, total, page, pageSize, storeId }: an
                 const status = qty <= 0 ? "OUT_OF_STOCK" : qty <= minStock ? "LOW_STOCK" : null;
                 return (
                   <tr key={p.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3 font-medium">{p.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <div>{p.name}</div>
+                      {p.storageBalances && p.storageBalances.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {p.storageBalances.map((sb: any) => (
+                            <span
+                              key={sb.id}
+                              className="inline-flex items-center text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono"
+                            >
+                              {sb.storageLocation?.name}: {Number(sb.quantity)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.sku}</td>
                     <td className="px-4 py-3 text-muted-foreground">{p.category?.name ?? "—"}</td>
                     <td className={`px-4 py-3 text-right font-bold ${qty <= 0 ? "text-danger" : qty <= minStock ? "text-warning" : "text-foreground"}`}>
