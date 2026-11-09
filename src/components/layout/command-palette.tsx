@@ -25,6 +25,7 @@ import {
   Warehouse,
   MapPin,
   ArrowLeftRight,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -98,6 +99,15 @@ const STATIC_ITEMS: SearchItem[] = [
     icon: ArrowLeftRight,
     href: "/store-management/transfers/new",
     badge: "Transfer",
+  },
+  {
+    id: "action-adjustment",
+    title: "New Stock Adjustment",
+    subtitle: "Reconcile fabric counts, record damages, scrap, or recount variances",
+    category: "Quick Actions",
+    icon: ClipboardList,
+    href: "/inventory/adjustments/new",
+    badge: "Adjustment",
   },
 
   // Navigation
