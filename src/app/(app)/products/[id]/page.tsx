@@ -6,6 +6,7 @@ import { ArrowLeft, Edit2, Package, Layers, DollarSign, Barcode } from "lucide-r
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ProductDeleteButton } from "@/components/products/product-delete-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -97,6 +98,11 @@ export default async function ProductDetailPage({
             <Edit2 className="w-4 h-4" />
             Edit Product
           </Link>
+          <ProductDeleteButton
+            productId={product.id}
+            productName={product.name}
+            productSku={product.sku}
+          />
         </div>
       </div>
 

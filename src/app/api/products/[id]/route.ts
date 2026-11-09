@@ -142,6 +142,7 @@ export async function DELETE(
   try {
     const session = await auth();
     const organizationId = (session?.user as any)?.organizationId;
+    const userId = session?.user?.id;
     const { id } = await params;
 
     if (!organizationId) {
@@ -155,6 +156,9 @@ export async function DELETE(
           select: {
             saleItems: true,
             purchaseItems: true,
+            stockTransferItems: true,
+            stockAdjustmentItems: true,
+            stockCountItems: true,
           },
         },
       },
@@ -164,21 +168,50 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (existing._count.saleItems > 0 || existing._count.purchaseItems > 0) {
+    const hasTransactions =
+      existing._count.saleItems > 0 ||
+      existing._count.purchaseItems > 0 ||
+      existing._count.stockTransferItems > 0 ||
+      existing._count.stockAdjustmentItems > 0 ||
+      existing._count.stockCountItems > 0;
+
+    if (hasTransactions) {
       return NextResponse.json(
         {
           error:
-            "Cannot delete a fabric product linked to historical sales or purchase orders. Please archive the product instead to preserve audit history.",
+            "Cannot delete product because it has historical transactions (sales, purchases, transfers, or inventory adjustments). Archive the product instead to preserve your audit trail.",
+          canArchive: true,
         },
         { status: 400 }
       );
     }
 
-    await prisma.product.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      await tx.productBarcode.deleteMany({ where: { productId: id } });
+      await tx.supplierProduct.deleteMany({ where: { productId: id } });
+      await tx.stockMovement.deleteMany({ where: { productId: id } });
+      await tx.inventoryBalance.deleteMany({ where: { productId: id } });
+      await tx.storageStockMovement.deleteMany({ where: { productId: id } });
+      await tx.storageInventoryBalance.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId,
+          actorId: userId,
+          action: "PRODUCT_DELETED",
+          entityType: "PRODUCT",
+          entityId: id,
+          oldValues: {
+            name: existing.name,
+            sku: existing.sku,
+            sellingPrice: Number(existing.sellingPrice),
+          },
+        },
+      });
     });
 
-    return NextResponse.json({ success: true, message: "Product deleted" });
+    return NextResponse.json({ success: true, message: `Product "${existing.name}" deleted successfully` });
   } catch (error: any) {
     console.error("DELETE product [id] error:", error);
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });

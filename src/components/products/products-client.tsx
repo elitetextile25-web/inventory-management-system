@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Plus, Search, Filter, Package, Edit2, Archive, Eye, Barcode, Download } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Plus, Search, Filter, Package, Edit2, Archive, Eye, Barcode, Download, Trash2, AlertCircle, X, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, EmptyState, Skeleton } from "@/components/ui/badge";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -59,6 +59,73 @@ export function ProductsClient({
   };
 
   const [exporting, setExporting] = React.useState(false);
+
+  // Deletion modal state
+  const [deleteTarget, setDeleteTarget] = React.useState<Product | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [canArchive, setCanArchive] = React.useState(false);
+
+  const handleDeleteProduct = (product: Product) => {
+    setDeleteTarget(product);
+    setDeleteError(null);
+    setCanArchive(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(`/api/products/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setDeleteError(data.error || "Failed to delete product");
+        if (data.canArchive) {
+          setCanArchive(true);
+        }
+        return;
+      }
+
+      toast.success(data.message || `Product "${deleteTarget.name}" deleted successfully!`);
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err.message || "An unexpected error occurred");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleArchiveInstead = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+
+    try {
+      const res = await fetch(`/api/products/${deleteTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ARCHIVED" }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to archive product");
+      }
+
+      toast.success(`Product "${deleteTarget.name}" archived successfully!`);
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to archive product");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleExport = async () => {
     try {
@@ -253,6 +320,15 @@ export function ProductsClient({
                               <Edit2 className="w-4 h-4" />
                             </Link>
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteProduct(product)}
+                            title="Delete Product"
+                            className="text-muted-foreground hover:text-danger hover:bg-danger/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -290,6 +366,76 @@ export function ProductsClient({
           </div>
         )}
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <Card className="max-w-md w-full shadow-2xl border-danger/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-danger flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-danger" /> Confirm Delete Product
+                </CardTitle>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-foreground">
+                Are you sure you want to delete product{" "}
+                <span className="font-semibold text-foreground">"{deleteTarget.name}"</span> (
+                <span className="font-mono text-primary">{deleteTarget.sku}</span>)?
+              </p>
+
+              {deleteError && (
+                <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-xs text-danger space-y-2">
+                  <p>{deleteError}</p>
+                  {canArchive && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleArchiveInstead}
+                      disabled={deleting}
+                      className="w-full text-xs gap-1 border-danger/30 hover:bg-danger/15 text-danger"
+                    >
+                      <Archive className="w-3.5 h-3.5" /> Archive Product Instead
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={() => setDeleteTarget(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={handleDeleteConfirm}
+                  className="gap-1.5"
+                >
+                  {deleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  Delete Permanently
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
