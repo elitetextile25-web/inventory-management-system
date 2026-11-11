@@ -214,7 +214,12 @@ export function InventoryClient({ products, total, page, pageSize, storeId }: an
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.sku}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                        <span className="font-semibold text-primary">{p.productCode || p.sku}</span>
+                        {p.productCode && p.sku !== p.productCode && (
+                          <span className="block text-[10px] text-muted-foreground">{p.sku}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{p.category?.name ?? "—"}</td>
                       <td
                         className={`px-4 py-3 text-right font-bold ${

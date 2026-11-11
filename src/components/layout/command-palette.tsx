@@ -277,7 +277,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           const items: SearchItem[] = json.data.slice(0, 6).map((p: any) => ({
             id: `prod-${p.id}`,
             title: p.name,
-            subtitle: `SKU: ${p.sku} · ৳${Number(p.sellingPrice).toLocaleString()} / ${p.unit?.abbreviation || "unit"} · ${p.category?.name || "Fabric"}`,
+            subtitle: `Code: ${p.productCode || p.sku} · ৳${Number(p.sellingPrice).toLocaleString()} / ${p.unit?.abbreviation || "unit"} · ${p.category?.name || "Fabric"}`,
             category: "Fabrics & Products",
             icon: Layers,
             href: `/products?search=${encodeURIComponent(p.sku)}`,

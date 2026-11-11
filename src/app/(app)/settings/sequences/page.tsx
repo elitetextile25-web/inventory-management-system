@@ -21,6 +21,14 @@ const DOC_TYPES = [
   { value: "RETURN", label: "Return / Credit Note" },
   { value: "EXPENSE", label: "Expense Voucher" },
   { value: "PAYMENT", label: "Payment Receipt" },
+  { value: "PRODUCT_TSH", label: "Product Code (T-Shirt / Polo)" },
+  { value: "PRODUCT_FAB", label: "Product Code (Fabric)" },
+  { value: "PRODUCT_KNT", label: "Product Code (Knitting)" },
+  { value: "PRODUCT_PRD", label: "Product Code (Finished Product)" },
+  { value: "PRODUCT_ORD", label: "Product Code (Order)" },
+  { value: "PRODUCT_RAW", label: "Product Code (Raw Material)" },
+  { value: "PRODUCT_ACC", label: "Product Code (Accessories)" },
+  { value: "PRODUCT_CUS", label: "Product Code (Custom)" },
 ];
 
 export default function SequencesSettingsPage() {

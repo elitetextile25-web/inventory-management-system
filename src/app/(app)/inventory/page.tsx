@@ -19,6 +19,7 @@ export default async function InventoryPage({
   const where: any = { organizationId };
   if (sp.search) where.OR = [
     { name: { contains: sp.search, mode: "insensitive" } },
+    { productCode: { contains: sp.search, mode: "insensitive" } },
     { sku: { contains: sp.search, mode: "insensitive" } },
   ];
 

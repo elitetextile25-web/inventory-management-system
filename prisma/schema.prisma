@@ -45,6 +45,7 @@ model Organization {
   purchaseSources  PurchaseSource[]
   storageLocations StorageLocation[]
   stockTransfers   StockTransfer[]
+  colors           Color[]
 
   @@map("organizations")
 }
@@ -226,6 +227,7 @@ model Product {
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id])
   sku             String
+  productCode     String?
   name            String
   description     String?
   categoryId      String?
@@ -238,10 +240,23 @@ model Product {
   unit            Unit?        @relation(fields: [unitId], references: [id])
   shopId          String?
   shop            Shop?        @relation(fields: [shopId], references: [id])
+  productType     String       @default("FINISHED_PRODUCT")
+  color           String?
   purchaseCost    Decimal      @default(0) @db.Decimal(15, 4)
   sellingPrice    Decimal      @default(0) @db.Decimal(15, 4)
+  discountType    String       @default("NONE")
+  discountValue   Decimal      @default(0) @db.Decimal(15, 4)
+  finalSellingPrice Decimal?   @db.Decimal(15, 4)
+  weight          Decimal?     @db.Decimal(12, 4)
+  weightUnit      String?
+  lengthInMeters  Decimal?     @db.Decimal(12, 4)
   minimumStock    Decimal      @default(0) @db.Decimal(15, 4)
+  maximumStock    Decimal?     @db.Decimal(15, 4)
   reorderLevel    Decimal      @default(0) @db.Decimal(15, 4)
+  rackNumber      String?
+  shelfNumber     String?
+  storageLocationId String?
+  storageLocation StorageLocation? @relation(fields: [storageLocationId], references: [id])
   taxRate         Decimal      @default(0) @db.Decimal(5, 2)
   isTaxable       Boolean      @default(false)
   imageUrl        String?
@@ -251,6 +266,8 @@ model Product {
   createdBy       String?
   updatedBy       String?
 
+  images            ProductImage[]
+  colors            ProductColorMap[]
   barcodes          ProductBarcode[]
   inventoryBalances InventoryBalance[]
   stockMovements    StockMovement[]
@@ -264,8 +281,10 @@ model Product {
   stockTransferItems StockTransferItem[]
 
   @@unique([organizationId, sku])
+  @@index([organizationId, productCode])
   @@index([organizationId, status])
   @@index([organizationId, name])
+  @@index([organizationId, productType])
   @@map("products")
 }
 
@@ -437,16 +456,59 @@ model Supplier {
 }
 
 model SupplierProduct {
-  supplierId String
-  productId  String
-  supplier   Supplier @relation(fields: [supplierId], references: [id])
-  product    Product  @relation(fields: [productId], references: [id])
-  supplierSku String?
-  leadTime   Int?
-  minOrder   Decimal? @db.Decimal(15, 4)
+  supplierId        String
+  productId         String
+  supplier          Supplier @relation(fields: [supplierId], references: [id])
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierSku       String?
+  leadTime          Int?
+  minOrder          Decimal? @db.Decimal(15, 4)
+  isDefault         Boolean  @default(false)
+  purchaseReference String?
 
   @@id([supplierId, productId])
   @@map("supplier_products")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model Color {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  hexCode        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  productColors  ProductColorMap[]
+
+  @@unique([organizationId, name])
+  @@map("colors")
+}
+
+model ProductColorMap {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorId   String
+  color     Color   @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, colorId])
+  @@index([productId])
+  @@index([colorId])
+  @@map("product_colors")
 }
 
 model SupplierTransaction {
@@ -1130,6 +1192,7 @@ model StorageLocation {
   stockMovements     StorageStockMovement[]
   transfersFrom      StockTransfer[]  @relation("SourceStorageLocation")
   transfersTo        StockTransfer[]  @relation("DestinationStorageLocation")
+  products           Product[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
