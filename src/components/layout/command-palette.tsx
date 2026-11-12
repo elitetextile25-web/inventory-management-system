@@ -26,6 +26,7 @@ import {
   MapPin,
   ArrowLeftRight,
   ClipboardList,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -152,12 +153,20 @@ const STATIC_ITEMS: SearchItem[] = [
     href: "/configuration",
   },
   {
-    id: "nav-categories-locations",
-    title: "Categories & Locations",
-    subtitle: "Manage parent categories, subcategories, and shop branches",
+    id: "nav-categories",
+    title: "Categories & Subcategories",
+    subtitle: "Manage parent fabric categories and nested subcategories",
     category: "Navigation",
     icon: FolderTree,
     href: "/categories-locations",
+  },
+  {
+    id: "nav-shop-locations",
+    title: "Shop Locations (Where We Buy)",
+    subtitle: "Manage vendor shop locations and wholesale market stalls",
+    category: "Navigation",
+    icon: Store,
+    href: "/locations",
   },
   {
     id: "nav-products",

@@ -554,7 +554,7 @@ export function ConfigurationClient() {
           <Button variant="outline" size="sm" asChild>
             <Link href="/categories-locations" className="flex items-center gap-1.5">
               <FolderTree className="w-3.5 h-3.5 text-primary" />
-              <span>Categories & Locations</span>
+              <span>Categories</span>
             </Link>
           </Button>
 

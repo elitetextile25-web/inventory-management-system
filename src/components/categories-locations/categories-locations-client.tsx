@@ -124,8 +124,20 @@ interface Category {
   _count?: { products: number; subProducts?: number; children: number };
 }
 
-export function CategoriesLocationsClient() {
-  const [activeTab, setActiveTab] = React.useState<"categories" | "shops" | "geo">("categories");
+interface CategoriesLocationsClientProps {
+  mode?: "categories" | "locations" | "all";
+  defaultTab?: "categories" | "shops" | "geo";
+}
+
+export function CategoriesLocationsClient({
+  mode = "all",
+  defaultTab,
+}: CategoriesLocationsClientProps = {}) {
+  const [activeTab, setActiveTab] = React.useState<"categories" | "shops" | "geo">(() => {
+    if (mode === "categories") return "categories";
+    if (mode === "locations") return defaultTab === "geo" ? "geo" : "shops";
+    return defaultTab || "categories";
+  });
   const [geoTab, setGeoTab] = React.useState<"cascade" | "countries" | "divisions" | "districts" | "areas">("cascade");
 
   // Loading states
@@ -371,6 +383,15 @@ export function CategoriesLocationsClient() {
   // ==========================================
   // SHOP ACTIONS
   // ==========================================
+  const handleOpenAddGeo = (type: "country" | "division" | "district" | "area" = "country") => {
+    setEditingGeo(null);
+    if (type === "country") setGeoCountryForm({ name: "", code: "", phoneCode: "+880", currency: "BDT", isActive: true });
+    if (type === "division") setGeoDivisionForm({ countryId: selCountry || (countries.length > 0 ? countries[0].id : ""), name: "", code: "", isActive: true });
+    if (type === "district") setGeoDistrictForm({ divisionId: selDivision || (divisions.length > 0 ? divisions[0].id : ""), name: "", code: "", isActive: true });
+    if (type === "area") setGeoAreaForm({ districtId: selDistrict || (districts.length > 0 ? districts[0].id : ""), name: "", postalCode: "", isActive: true });
+    setGeoModalOpen(type);
+  };
+
   const handleOpenAddShop = (prefillAreaId?: string) => {
     setEditingShop(null);
     setShopForm({
@@ -608,12 +629,28 @@ export function CategoriesLocationsClient() {
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <FolderTree className="w-5 h-5" />
+              {mode === "categories" ? (
+                <FolderTree className="w-5 h-5" />
+              ) : mode === "locations" ? (
+                <Store className="w-5 h-5" />
+              ) : (
+                <FolderTree className="w-5 h-5" />
+              )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Categories & Locations</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                {mode === "categories"
+                  ? "Product Categories & Subcategories"
+                  : mode === "locations"
+                  ? "Shop Locations (Purchase Sources)"
+                  : "Categories & Locations"}
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Manage product categories, subcategories, geographic territories, and shop branches
+                {mode === "categories"
+                  ? "Organize products into hierarchical parent categories and nested subcategories"
+                  : mode === "locations"
+                  ? "Manage vendor shop locations, wholesale market stalls, and fabric sourcing outlets where products are purchased"
+                  : "Manage product categories, subcategories, geographic territories, and shop branches"}
               </p>
             </div>
           </div>
@@ -627,7 +664,12 @@ export function CategoriesLocationsClient() {
           )}
           {activeTab === "shops" && (
             <Button onClick={() => handleOpenAddShop()} className="gap-2">
-              <Plus className="w-4 h-4" /> Add Shop / Branch
+              <Plus className="w-4 h-4" /> Add Shop Location
+            </Button>
+          )}
+          {activeTab === "geo" && (
+            <Button onClick={() => handleOpenAddGeo("country")} className="gap-2">
+              <Plus className="w-4 h-4" /> Add Territory
             </Button>
           )}
           <Button variant="outline" size="icon" onClick={loadAll} title="Refresh">
@@ -637,50 +679,54 @@ export function CategoriesLocationsClient() {
       </div>
 
       {/* Main Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-border pb-1">
-        <button
-          onClick={() => setActiveTab("categories")}
-          className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
-            activeTab === "categories"
-              ? "border-primary text-primary bg-primary/5"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FolderTree className="w-4 h-4" />
-          <span>Product Categories & Subcategories</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">
-            {categories.length}
-          </span>
-        </button>
+      {mode !== "categories" && (
+        <div className="flex items-center gap-2 border-b border-border pb-1">
+          {mode === "all" && (
+            <button
+              onClick={() => setActiveTab("categories")}
+              className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
+                activeTab === "categories"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FolderTree className="w-4 h-4" />
+              <span>Product Categories &amp; Subcategories</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">
+                {categories.length}
+              </span>
+            </button>
+          )}
 
-        <button
-          onClick={() => setActiveTab("shops")}
-          className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
-            activeTab === "shops"
-              ? "border-primary text-primary bg-primary/5"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Store className="w-4 h-4" />
-          <span>Shops & Branches</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">{shops.length}</span>
-        </button>
+          <button
+            onClick={() => setActiveTab("shops")}
+            className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
+              activeTab === "shops"
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            <span>Shop Locations (Where We Buy)</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">{shops.length}</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("geo")}
-          className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
-            activeTab === "geo"
-              ? "border-primary text-primary bg-primary/5"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Globe className="w-4 h-4" />
-          <span>Geographic Hierarchy</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">
-            {countries.length} / {divisions.length} / {districts.length} / {areas.length}
-          </span>
-        </button>
-      </div>
+          <button
+            onClick={() => setActiveTab("geo")}
+            className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-t-lg transition-colors border-b-2 ${
+              activeTab === "geo"
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Market Areas &amp; Territories</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-mono">
+              {countries.length} / {divisions.length} / {districts.length} / {areas.length}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* ============================================================== */}
       {/* TAB 1: PRODUCT CATEGORIES & SUBCATEGORIES                     */}

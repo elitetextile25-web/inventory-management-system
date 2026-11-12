@@ -1,10 +1,10 @@
 import { CategoriesLocationsClient } from "@/components/categories-locations/categories-locations-client";
 
 export const metadata = {
-  title: "Categories & Locations — FabricPro",
-  description: "Manage product categories, subcategories, geographic locations, and shops.",
+  title: "Categories & Subcategories — FabricPro",
+  description: "Manage product categories and subcategories in a unified hierarchical structure.",
 };
 
-export default function CategoriesLocationsPage() {
-  return <CategoriesLocationsClient />;
+export default function CategoriesPage() {
+  return <CategoriesLocationsClient mode="categories" />;
 }
