@@ -55,6 +55,14 @@ export default function OrganizationSettingsPage() {
         toast.error(data.error || "Failed to save");
         return;
       }
+      const data = await res.json();
+      const updatedName = data?.name || form.name.trim();
+      try {
+        localStorage.setItem("company_name", updatedName);
+        window.dispatchEvent(
+          new CustomEvent("company-name-updated", { detail: { name: updatedName } })
+        );
+      } catch {}
       toast.success("Organization settings saved!");
     } catch {
       toast.error("Failed to save organization settings");

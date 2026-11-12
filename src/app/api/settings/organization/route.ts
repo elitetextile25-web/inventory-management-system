@@ -7,17 +7,22 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const orgId = (session.user as any).organizationId;
-  if (!orgId) return NextResponse.json({ error: "No organization found" }, { status: 404 });
-
-  const org = await prisma.organization.findUnique({ where: { id: orgId } });
-  return NextResponse.json(org);
+  let org = orgId ? await prisma.organization.findUnique({ where: { id: orgId } }) : null;
+  if (!org) {
+    org = await prisma.organization.findFirst();
+  }
+  return NextResponse.json(org || {});
 }
 
 export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const orgId = (session.user as any).organizationId;
+  let orgId = (session.user as any).organizationId;
+  if (!orgId) {
+    const firstOrg = await prisma.organization.findFirst();
+    orgId = firstOrg?.id;
+  }
   if (!orgId) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 
   const body = await req.json();

@@ -271,6 +271,14 @@ export function ConfigurationClient() {
         toast.error(data.error || "Failed to save company settings");
         return;
       }
+      const data = await res.json();
+      const updatedName = data?.name || orgForm.name.trim();
+      try {
+        localStorage.setItem("company_name", updatedName);
+        window.dispatchEvent(
+          new CustomEvent("company-name-updated", { detail: { name: updatedName } })
+        );
+      } catch {}
       toast.success("Company profile saved successfully!");
     } catch {
       toast.error("Failed to save company settings");

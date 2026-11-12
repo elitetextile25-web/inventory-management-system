@@ -82,10 +82,53 @@ const NAV_ITEMS = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  organizationName?: string;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, organizationName }: SidebarProps) {
   const pathname = usePathname();
+  const [companyName, setCompanyName] = React.useState(organizationName || "FabricPro");
+
+  React.useEffect(() => {
+    if (organizationName) {
+      setCompanyName(organizationName);
+      try {
+        localStorage.setItem("company_name", organizationName);
+      } catch {}
+    } else {
+      try {
+        const cached = localStorage.getItem("company_name");
+        if (cached) setCompanyName(cached);
+      } catch {}
+    }
+
+    // Background fetch from API to ensure fresh state
+    fetch("/api/settings/organization")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.name) {
+          setCompanyName(data.name);
+          try {
+            localStorage.setItem("company_name", data.name);
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
+    // Live update listener when updated in Company Setup
+    const handleUpdate = (e: any) => {
+      const newName = e.detail?.name;
+      if (newName) {
+        setCompanyName(newName);
+        try {
+          localStorage.setItem("company_name", newName);
+        } catch {}
+      }
+    };
+
+    window.addEventListener("company-name-updated", handleUpdate);
+    return () => window.removeEventListener("company-name-updated", handleUpdate);
+  }, [organizationName]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -105,18 +148,25 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg kpi-gradient-purple flex items-center justify-center shadow-sm">
+          <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
+            <div className="w-8 h-8 rounded-lg kpi-gradient-purple flex items-center justify-center shadow-sm shrink-0">
               <Scissors className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-foreground leading-tight">FabricPro</p>
-              <p className="text-[10px] text-muted-foreground leading-tight font-medium">Textile & Fabric ERP</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground leading-tight truncate" title={companyName}>
+                {companyName}
+              </p>
+              <p className="text-[10px] text-muted-foreground leading-tight font-medium truncate">
+                Textile &amp; Fabric ERP
+              </p>
             </div>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-lg kpi-gradient-purple flex items-center justify-center shadow-sm">
+          <div
+            className="w-8 h-8 rounded-lg kpi-gradient-purple flex items-center justify-center shadow-sm"
+            title={companyName}
+          >
             <Scissors className="w-4 h-4 text-white" />
           </div>
         )}

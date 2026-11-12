@@ -8,9 +8,10 @@ import { Topbar, Breadcrumbs } from "./topbar";
 interface DashboardLayoutProps {
   children: React.ReactNode;
   user?: { name?: string | null; email?: string | null };
+  organizationName?: string;
 }
 
-export function DashboardLayout({ children, user }: DashboardLayoutProps) {
+export function DashboardLayout({ children, user, organizationName }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -18,7 +19,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+        <Sidebar
+          collapsed={collapsed}
+          onToggle={() => setCollapsed(!collapsed)}
+          organizationName={organizationName}
+        />
       </div>
 
       {/* Mobile Sidebar overlay */}
@@ -30,7 +35,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       )}
       {mobileOpen && (
         <div className="lg:hidden fixed left-0 top-0 h-full z-40">
-          <Sidebar collapsed={false} onToggle={() => setMobileOpen(false)} />
+          <Sidebar
+            collapsed={false}
+            onToggle={() => setMobileOpen(false)}
+            organizationName={organizationName}
+          />
         </div>
       )}
 
