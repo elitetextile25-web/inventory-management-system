@@ -665,24 +665,14 @@ export function ConfigurationClient() {
         <div className="space-y-6 max-w-4xl">
           <Card>
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-primary" />
-                    Company &amp; Organization Profile
-                  </CardTitle>
-                  <CardDescription>
-                    Core business details that appear on sales invoices, purchase orders, receipts, and system reports.
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={handleSaveOrg}
-                  disabled={orgSaving}
-                  className="kpi-gradient-blue text-white gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {orgSaving ? "Saving..." : "Save Changes"}
-                </Button>
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  Company &amp; Organization Profile
+                </CardTitle>
+                <CardDescription>
+                  Core business details that appear on sales invoices, purchase orders, receipts, and system reports.
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -769,17 +759,6 @@ export function ConfigurationClient() {
                         className={inputClass}
                       />
                     </div>
-                  </div>
-
-                  <div className="pt-2 flex justify-end">
-                    <Button
-                      onClick={handleSaveOrg}
-                      disabled={orgSaving}
-                      className="kpi-gradient-blue text-white gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      {orgSaving ? "Saving..." : "Save Company Profile"}
-                    </Button>
                   </div>
                 </>
               )}
