@@ -19,7 +19,7 @@ const NAV_ITEMS = [
     group: "Overview",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Store Configuration", href: "/configuration", icon: Sliders },
+      { label: "Company Setup", href: "/configuration", icon: Building2 },
       { label: "Categories & Locations", href: "/categories-locations", icon: FolderTree },
     ],
   },

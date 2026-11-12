@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   XCircle,
   Building,
+  Building2,
+  Save,
   Navigation,
   ArrowRight,
   Filter,
@@ -91,8 +93,20 @@ interface Category {
 }
 
 export function ConfigurationClient() {
-  const [activeMainTab, setActiveMainTab] = React.useState<"geo" | "categories">("geo");
+  const [activeMainTab, setActiveMainTab] = React.useState<"company" | "geo" | "categories">("company");
   const [geoSubTab, setGeoSubTab] = React.useState<"cascade" | "countries" | "divisions" | "districts" | "areas">("cascade");
+
+  // Company Profile state
+  const [orgForm, setOrgForm] = React.useState({
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
+    taxNumber: "",
+  });
+  const [orgLoading, setOrgLoading] = React.useState(true);
+  const [orgSaving, setOrgSaving] = React.useState(false);
 
   // Loading states
   const [loading, setLoading] = React.useState(true);
@@ -217,9 +231,58 @@ export function ConfigurationClient() {
     }
   }, [selectedCountryId]);
 
+  // Fetch organization / company data
+  const fetchOrgData = React.useCallback(async () => {
+    try {
+      setOrgLoading(true);
+      const res = await fetch("/api/settings/organization");
+      const data = await res.json();
+      if (data && !data.error) {
+        setOrgForm({
+          name: data.name || "",
+          address: data.address || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          website: data.website || "",
+          taxNumber: data.taxNumber || "",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setOrgLoading(false);
+    }
+  }, []);
+
+  const handleSaveOrg = async () => {
+    if (!orgForm.name.trim()) {
+      toast.error("Company name is required");
+      return;
+    }
+    try {
+      setOrgSaving(true);
+      const res = await fetch("/api/settings/organization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orgForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to save company settings");
+        return;
+      }
+      toast.success("Company profile saved successfully!");
+    } catch {
+      toast.error("Failed to save company settings");
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
   React.useEffect(() => {
     fetchAllData();
-  }, [fetchAllData]);
+    fetchOrgData();
+  }, [fetchAllData, fetchOrgData]);
 
   // Sync cascading dropdowns when selectedCountry changes
   const availableDivisions = React.useMemo(() => {
@@ -470,12 +533,12 @@ export function ConfigurationClient() {
         <div>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Sliders className="w-5 h-5" />
+              <Building2 className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Store Configuration</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Company Setup</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Setup and manage hierarchical geographic territories, store configuration, and category trees.
+            Setup and manage your company profile, business details, geographic territories, and category trees.
           </p>
         </div>
 
@@ -487,12 +550,22 @@ export function ConfigurationClient() {
             </Link>
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => fetchAllData()} disabled={loading}>
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" size="sm" onClick={() => { fetchAllData(); fetchOrgData(); }} disabled={loading || orgLoading}>
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${(loading || orgLoading) ? "animate-spin" : ""}`} />
             Refresh
           </Button>
 
-          {activeMainTab === "geo" ? (
+          {activeMainTab === "company" ? (
+            <Button
+              size="sm"
+              className="kpi-gradient-blue text-white"
+              onClick={handleSaveOrg}
+              disabled={orgSaving}
+            >
+              <Save className="w-4 h-4 mr-1.5" />
+              {orgSaving ? "Saving..." : "Save Company Profile"}
+            </Button>
+          ) : activeMainTab === "geo" ? (
             <Button
               size="sm"
               className="kpi-gradient-blue text-white"
@@ -537,6 +610,18 @@ export function ConfigurationClient() {
       {/* Main Module Tabs */}
       <div className="flex border-b border-border gap-2">
         <button
+          onClick={() => setActiveMainTab("company")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
+            activeMainTab === "company"
+              ? "border-primary text-primary font-semibold"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          Company Profile
+        </button>
+
+        <button
           onClick={() => setActiveMainTab("geo")}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
             activeMainTab === "geo"
@@ -566,6 +651,134 @@ export function ConfigurationClient() {
           </span>
         </button>
       </div>
+
+      {/* ─────────────────── TAB: COMPANY PROFILE ─────────────────── */}
+      {activeMainTab === "company" && (
+        <div className="space-y-6 max-w-4xl">
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-primary" />
+                    Company &amp; Organization Profile
+                  </CardTitle>
+                  <CardDescription>
+                    Core business details that appear on sales invoices, purchase orders, receipts, and system reports.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={handleSaveOrg}
+                  disabled={orgSaving}
+                  className="kpi-gradient-blue text-white gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {orgSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {orgLoading ? (
+                <div className="py-12 flex justify-center items-center">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Company / Organization Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={orgForm.name}
+                        onChange={(e) => setOrgForm((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. FabricPro Textile & Apparel Ltd."
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Tax / BIN / Trade License Number
+                      </label>
+                      <input
+                        type="text"
+                        value={orgForm.taxNumber}
+                        onChange={(e) => setOrgForm((prev) => ({ ...prev, taxNumber: e.target.value }))}
+                        placeholder="e.g. BIN-123456789-0101"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Business Headquarters / Office Address
+                    </label>
+                    <textarea
+                      value={orgForm.address}
+                      onChange={(e) => setOrgForm((prev) => ({ ...prev, address: e.target.value }))}
+                      placeholder="e.g. House #12, Road #4, Sector #3, Uttara, Dhaka-1230, Bangladesh"
+                      rows={3}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Official Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={orgForm.phone}
+                        onChange={(e) => setOrgForm((prev) => ({ ...prev, phone: e.target.value }))}
+                        placeholder="+880 1XXX-XXXXXX"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Business Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={orgForm.email}
+                        onChange={(e) => setOrgForm((prev) => ({ ...prev, email: e.target.value }))}
+                        placeholder="info@company.com"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Official Website
+                      </label>
+                      <input
+                        type="url"
+                        value={orgForm.website}
+                        onChange={(e) => setOrgForm((prev) => ({ ...prev, website: e.target.value }))}
+                        placeholder="https://company.com"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      onClick={handleSaveOrg}
+                      disabled={orgSaving}
+                      className="kpi-gradient-blue text-white gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      {orgSaving ? "Saving..." : "Save Company Profile"}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* ─────────────────── TAB 1: GEOGRAPHIC CONFIGURATION ─────────────────── */}
       {activeMainTab === "geo" && (

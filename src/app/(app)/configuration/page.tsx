@@ -1,8 +1,8 @@
 import { ConfigurationClient } from "@/components/configuration/configuration-client";
 
 export const metadata = {
-  title: "Store Configuration — FabricPro",
-  description: "Configure geographic hierarchy (Country, Division, District, Area) and product categories.",
+  title: "Company Setup — FabricPro",
+  description: "Configure company details, geographic hierarchy, and business structure.",
 };
 
 export default function ConfigurationPage() {

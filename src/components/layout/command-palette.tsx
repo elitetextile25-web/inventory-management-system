@@ -145,10 +145,10 @@ const STATIC_ITEMS: SearchItem[] = [
   },
   {
     id: "nav-configuration",
-    title: "Store Configuration",
-    subtitle: "Territory hierarchy, general store preferences & system configuration",
+    title: "Company Setup",
+    subtitle: "Company profile, territory hierarchy & category configuration",
     category: "Navigation",
-    icon: Sliders,
+    icon: Building2,
     href: "/configuration",
   },
   {
