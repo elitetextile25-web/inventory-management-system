@@ -19,7 +19,12 @@ const NAV_ITEMS = [
     group: "Overview",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Company Setup", href: "/configuration", icon: Building2 },
+      {
+        label: "Company Setup", href: "/configuration", icon: Building2,
+        subItems: [
+          { label: "Shop Locations", href: "/locations", icon: MapPin },
+        ],
+      },
       { label: "Categories", href: "/categories-locations", icon: FolderTree },
     ],
   },
@@ -194,24 +199,52 @@ export function Sidebar({ collapsed, onToggle, organizationName }: SidebarProps)
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
+              const hasSubItems = "subItems" in item && item.subItems && item.subItems.length > 0;
 
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={collapsed ? item.label : undefined}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150",
-                    "hover:bg-muted",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground/70 hover:text-foreground",
-                    collapsed && "justify-center px-2"
+                <div key={item.href}>
+                  <Link
+                    href={item.href}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150",
+                      "hover:bg-muted",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground/70 hover:text-foreground",
+                      collapsed && "justify-center px-2"
+                    )}
+                  >
+                    <Icon className={cn("w-4 h-4 shrink-0", active && "text-primary")} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+
+                  {/* Sub-items (shown indented below parent) */}
+                  {!collapsed && hasSubItems && (
+                    <div className="ml-4 mt-0.5 border-l border-border pl-3 space-y-0.5">
+                      {(item as any).subItems.map((sub: { label: string; href: string; icon: any }) => {
+                        const SubIcon = sub.icon;
+                        const subActive = pathname === sub.href || pathname.startsWith(sub.href + "/");
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={cn(
+                              "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150",
+                              "hover:bg-muted",
+                              subActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground/60 hover:text-foreground"
+                            )}
+                          >
+                            <SubIcon className={cn("w-3.5 h-3.5 shrink-0", subActive && "text-primary")} />
+                            <span className="truncate">{sub.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   )}
-                >
-                  <Icon className={cn("w-4 h-4 shrink-0", active && "text-primary")} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </Link>
+                </div>
               );
             })}
           </div>
