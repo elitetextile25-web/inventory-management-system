@@ -21,7 +21,6 @@ const NAV_ITEMS = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Company Setup", href: "/configuration", icon: Building2 },
       { label: "Categories", href: "/categories-locations", icon: FolderTree },
-      { label: "Shop Locations", href: "/locations", icon: Store },
     ],
   },
   {
