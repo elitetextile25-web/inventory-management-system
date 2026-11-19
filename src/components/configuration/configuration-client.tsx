@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -23,7 +23,6 @@ import {
   ArrowRight,
   Filter,
   RefreshCw,
-  FolderPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,19 +80,8 @@ interface Area {
   };
 }
 
-interface Category {
-  id: string;
-  name: string;
-  parentId: string | null;
-  parent?: { id: string; name: string } | null;
-  description: string | null;
-  isActive: boolean;
-  children?: { id: string; name: string }[];
-  _count?: { products: number; children: number };
-}
-
 export function ConfigurationClient() {
-  const [activeMainTab, setActiveMainTab] = React.useState<"company" | "geo" | "categories">("company");
+  const [activeMainTab, setActiveMainTab] = React.useState<"company" | "geo">("company");
   const [geoSubTab, setGeoSubTab] = React.useState<"cascade" | "countries" | "divisions" | "districts" | "areas">("cascade");
 
   // Company Profile state
@@ -117,8 +105,6 @@ export function ConfigurationClient() {
   const [divisions, setDivisions] = React.useState<Division[]>([]);
   const [districts, setDistricts] = React.useState<District[]>([]);
   const [areas, setAreas] = React.useState<Area[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
-
   // Search & Filter state
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCountryId, setSelectedCountryId] = React.useState<string>("");
@@ -131,7 +117,6 @@ export function ConfigurationClient() {
   const [showDivisionModal, setShowDivisionModal] = React.useState(false);
   const [showDistrictModal, setShowDistrictModal] = React.useState(false);
   const [showAreaModal, setShowAreaModal] = React.useState(false);
-  const [showCategoryModal, setShowCategoryModal] = React.useState(false);
 
   // Edit target
   const [editingItem, setEditingItem] = React.useState<any>(null);
@@ -181,31 +166,22 @@ export function ConfigurationClient() {
     isActive: true,
   });
 
-  const [categoryForm, setCategoryForm] = React.useState({
-    name: "",
-    parentId: "",
-    description: "",
-    isActive: true,
-  });
-
   // Fetch all configuration data
   const fetchAllData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const [cRes, dRes, distRes, aRes, catRes] = await Promise.all([
+      const [cRes, dRes, distRes, aRes] = await Promise.all([
         fetch("/api/configuration/geo/countries"),
         fetch("/api/configuration/geo/divisions"),
         fetch("/api/configuration/geo/districts"),
         fetch("/api/configuration/geo/areas"),
-        fetch("/api/configuration/categories"),
       ]);
 
-      const [cData, dData, distData, aData, catData] = await Promise.all([
+      const [cData, dData, distData, aData] = await Promise.all([
         cRes.json(),
         dRes.json(),
         distRes.json(),
         aRes.json(),
-        catRes.json(),
       ]);
 
       const fetchedCountries = cData.data || [];
@@ -216,7 +192,6 @@ export function ConfigurationClient() {
       setDivisions(fetchedDivisions);
       setDistricts(fetchedDistricts);
       setAreas(aData.data || []);
-      setCategories(catData.data || []);
 
       // Auto-select first country if none selected
       if (!selectedCountryId && fetchedCountries.length > 0) {
@@ -462,59 +437,6 @@ export function ConfigurationClient() {
     }
   };
 
-  // CATEGORY SUBMIT HANDLER
-  const handleCategorySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!categoryForm.name.trim()) {
-      toast.error("Category name is required");
-      return;
-    }
-    try {
-      setSaving(true);
-      const url = "/api/configuration/categories";
-      const method = editingItem ? "PUT" : "POST";
-      const payload = {
-        ...(editingItem ? { id: editingItem.id } : {}),
-        name: categoryForm.name.trim(),
-        parentId: categoryForm.parentId || null,
-        description: categoryForm.description.trim() || null,
-        isActive: categoryForm.isActive,
-      };
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to save category");
-
-      toast.success(editingItem ? "Category updated successfully!" : "Category created successfully!");
-      setShowCategoryModal(false);
-      setEditingItem(null);
-      setCategoryForm({ name: "", parentId: "", description: "", isActive: true });
-      fetchAllData();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // DELETE CATEGORY
-  const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete category "${name}"? Any subcategories under it will also be deleted, and assigned products will be unlinked.`)) return;
-    try {
-      const res = await fetch(`/api/configuration/categories?id=${id}`, { method: "DELETE" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to delete");
-      toast.success("Category deleted successfully");
-      fetchAllData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
   // DELETE GEO ITEM
   const handleDeleteGeo = async (type: "country" | "division" | "district" | "area", id: string, name: string) => {
     if (!confirm(`Delete ${type} "${name}"? This cannot be undone.`)) return;
@@ -546,7 +468,7 @@ export function ConfigurationClient() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Company Setup</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Setup and manage your company profile, business details, geographic territories, and category trees.
+            Setup and manage your company profile, business details, and geographic territories.
           </p>
         </div>
 
@@ -573,7 +495,7 @@ export function ConfigurationClient() {
               <Save className="w-4 h-4 mr-1.5" />
               {orgSaving ? "Saving..." : "Save Company Profile"}
             </Button>
-          ) : activeMainTab === "geo" ? (
+          ) : (
             <Button
               size="sm"
               className="kpi-gradient-blue text-white"
@@ -597,19 +519,6 @@ export function ConfigurationClient() {
             >
               <Sparkles className="w-4 h-4 mr-1.5" />
               Configure New Area (Hierarchy)
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              className="kpi-gradient-purple text-white"
-              onClick={() => {
-                setEditingItem(null);
-                setCategoryForm({ name: "", parentId: "", description: "", isActive: true });
-                setShowCategoryModal(true);
-              }}
-            >
-              <FolderPlus className="w-4 h-4 mr-1.5" />
-              Add Product Category
             </Button>
           )}
         </div>
@@ -638,29 +547,14 @@ export function ConfigurationClient() {
           }`}
         >
           <Globe className="w-4 h-4" />
-          Geographic Hierarchy (Country ➔ Division ➔ District ➔ Area)
+          Geographic Hierarchy (Country âž” Division âž” District âž” Area)
           <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-bold">
             {areas.length} Areas
           </span>
         </button>
-
-        <button
-          onClick={() => setActiveMainTab("categories")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
-            activeMainTab === "categories"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FolderTree className="w-4 h-4" />
-          Category Configuration
-          <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-purple-500/10 text-purple-600 font-bold">
-            {categories.length} Categories
-          </span>
-        </button>
       </div>
 
-      {/* ─────────────────── TAB: COMPANY PROFILE ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB: COMPANY PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeMainTab === "company" && (
         <div className="space-y-6 max-w-4xl">
           <Card>
@@ -767,7 +661,7 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── TAB 1: GEOGRAPHIC CONFIGURATION ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB 1: GEOGRAPHIC CONFIGURATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeMainTab === "geo" && (
         <div className="space-y-6">
           {/* Quick Metrics */}
@@ -832,7 +726,7 @@ export function ConfigurationClient() {
                   Hierarchical Location Generator
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Write or select: <span className="font-medium text-foreground">Country Name</span> ➔ <span className="font-medium text-foreground">Division Name</span> ➔ <span className="font-medium text-foreground">District Name</span> ➔ <span className="font-medium text-foreground">Area Name</span>.
+                  Write or select: <span className="font-medium text-foreground">Country Name</span> âž” <span className="font-medium text-foreground">Division Name</span> âž” <span className="font-medium text-foreground">District Name</span> âž” <span className="font-medium text-foreground">Area Name</span>.
                 </p>
               </div>
             </div>
@@ -1045,14 +939,14 @@ export function ConfigurationClient() {
                                   {a.postalCode}
                                 </Badge>
                               ) : (
-                                <span className="text-muted-foreground text-xs">—</span>
+                                <span className="text-muted-foreground text-xs">â€”</span>
                               )}
                             </td>
                             <td className="px-4 py-3 font-medium text-foreground">
-                              {a.district?.name || "—"}
+                              {a.district?.name || "â€”"}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
-                              {a.district?.division?.name || "—"}
+                              {a.district?.division?.name || "â€”"}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
                               <span className="inline-flex items-center gap-1.5">
@@ -1149,8 +1043,8 @@ export function ConfigurationClient() {
                       {countries.map((c) => (
                         <tr key={c.id} className="hover:bg-muted/30">
                           <td className="px-4 py-3 font-semibold text-foreground">{c.name}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{c.code || "—"}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{c.phoneCode || "—"}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{c.code || "â€”"}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{c.phoneCode || "â€”"}</td>
                           <td className="px-4 py-3 font-mono text-xs">{c.currency || "BDT"}</td>
                           <td className="px-4 py-3">
                             <Badge variant="outline">{c._count?.divisions || 0} Divisions</Badge>
@@ -1240,8 +1134,8 @@ export function ConfigurationClient() {
                       {availableDivisions.map((d) => (
                         <tr key={d.id} className="hover:bg-muted/30">
                           <td className="px-4 py-3 font-semibold text-foreground">{d.name}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{d.code || "—"}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{d.country?.name || "—"}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{d.code || "â€”"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{d.country?.name || "â€”"}</td>
                           <td className="px-4 py-3">
                             <Badge variant="outline">{d._count?.districts || 0} Districts</Badge>
                           </td>
@@ -1330,10 +1224,10 @@ export function ConfigurationClient() {
                       {availableDistricts.map((dist) => (
                         <tr key={dist.id} className="hover:bg-muted/30">
                           <td className="px-4 py-3 font-semibold text-foreground">{dist.name}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{dist.code || "—"}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{dist.division?.name || "—"}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{dist.code || "â€”"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{dist.division?.name || "â€”"}</td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {dist.division?.country?.name || "—"}
+                            {dist.division?.country?.name || "â€”"}
                           </td>
                           <td className="px-4 py-3">
                             <Badge variant="outline">{dist._count?.areas || 0} Areas</Badge>
@@ -1379,177 +1273,8 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── TAB 2: CATEGORY CONFIGURATION ─────────────────── */}
-      {activeMainTab === "categories" && (
-        <div className="space-y-6">
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Total Categories
-                </span>
-                <p className="text-2xl font-bold mt-1 text-foreground">{categories.length}</p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Root Categories
-                </span>
-                <p className="text-2xl font-bold mt-1 text-primary">
-                  {categories.filter((c) => !c.parentId).length}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Subcategories
-                </span>
-                <p className="text-2xl font-bold mt-1 text-purple-600">
-                  {categories.filter((c) => !!c.parentId).length}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Active
-                </span>
-                <p className="text-2xl font-bold mt-1 text-success">
-                  {categories.filter((c) => c.isActive).length}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FolderTree className="w-4 h-4 text-purple-600" />
-                  Product Categories & Subcategories
-                </CardTitle>
-                <CardDescription>
-                  Organize fabrics, raw textiles, finished garments, and shop products into categories.
-                </CardDescription>
-              </div>
-
-              <Button
-                size="sm"
-                className="kpi-gradient-purple text-white"
-                onClick={() => {
-                  setEditingItem(null);
-                  setCategoryForm({ name: "", parentId: "", description: "", isActive: true });
-                  setShowCategoryModal(true);
-                }}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                Add Category
-              </Button>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/50 text-xs font-semibold uppercase text-muted-foreground border-y border-border">
-                    <tr>
-                      <th className="px-4 py-3">Category Name</th>
-                      <th className="px-4 py-3">Parent / Tree</th>
-                      <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Products Linked</th>
-                      <th className="px-4 py-3">Subcategories</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {categories.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">
-                          No categories configured. Click &quot;Add Category&quot; to create your first product category.
-                        </td>
-                      </tr>
-                    ) : (
-                      categories.map((c) => (
-                        <tr key={c.id} className="hover:bg-muted/30">
-                          <td className="px-4 py-3 font-semibold text-foreground flex items-center gap-2">
-                            {c.parentId ? (
-                              <span className="text-muted-foreground text-xs ml-3">↳</span>
-                            ) : null}
-                            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />
-                            {c.name}
-                          </td>
-                          <td className="px-4 py-3">
-                            {c.parent ? (
-                              <Badge variant="outline" className="text-xs">
-                                {c.parent.name}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground font-medium">Main Category</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate">
-                            {c.description || "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant="secondary" className="font-semibold text-xs">
-                              {c._count?.products || 0} Products
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs text-muted-foreground font-medium">
-                              {c._count?.children || 0} subcategories
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant={c.isActive ? "success" : "muted"}>
-                              {c.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => {
-                                  setEditingItem(c);
-                                  setCategoryForm({
-                                    name: c.name,
-                                    parentId: c.parentId || "",
-                                    description: c.description || "",
-                                    isActive: c.isActive,
-                                  });
-                                  setShowCategoryModal(true);
-                                }}
-                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                                title="Edit"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCategory(c.id, c.name)}
-                                className="p-1 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ─────────────────── MODAL: HIERARCHICAL CASCADING GENERATOR ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODAL: HIERARCHICAL CASCADING GENERATOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showCascadingModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-xl shadow-2xl p-6 animate-fade-in">
@@ -1563,7 +1288,7 @@ export function ConfigurationClient() {
                     Hierarchical Location Generator
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Country ➔ Division ➔ District ➔ Area Name
+                    Country âž” Division âž” District âž” Area Name
                   </p>
                 </div>
               </div>
@@ -1571,7 +1296,7 @@ export function ConfigurationClient() {
                 onClick={() => setShowCascadingModal(false)}
                 className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -1779,107 +1504,8 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── MODAL: CATEGORY CREATE/EDIT ─────────────────── */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fade-in">
-            <div className="flex items-center justify-between pb-4 border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-600 flex items-center justify-center">
-                  <FolderTree className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-base text-foreground">
-                  {editingItem ? "Edit Product Category" : "Add Product Category"}
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowCategoryModal(false)}
-                className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
-              >
-                ✕
-              </button>
-            </div>
 
-            <form onSubmit={handleCategorySubmit} className="space-y-4 pt-4">
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Category Name <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Cotton Fabrics, Silk & Georgette, Buttons & Zippers"
-                  value={categoryForm.name}
-                  onChange={(e) => setCategoryForm((f) => ({ ...f, name: e.target.value }))}
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Parent Category (Optional - for Subcategories)
-                </label>
-                <select
-                  value={categoryForm.parentId}
-                  onChange={(e) => setCategoryForm((f) => ({ ...f, parentId: e.target.value }))}
-                  className={selectClass}
-                >
-                  <option value="">-- None (Main / Root Category) --</option>
-                  {categories
-                    .filter((c) => !editingItem || c.id !== editingItem.id)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Notes about fabric types, rolls, or products in this category..."
-                  value={categoryForm.description}
-                  onChange={(e) => setCategoryForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="categoryIsActive"
-                  checked={categoryForm.isActive}
-                  onChange={(e) => setCategoryForm((f) => ({ ...f, isActive: e.target.checked }))}
-                  className="rounded border-input text-primary focus:ring-ring"
-                />
-                <label htmlFor="categoryIsActive" className="text-xs font-medium text-foreground">
-                  Active in Catalog & Billing POS
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCategoryModal(false)}
-                  disabled={saving}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" loading={saving} className="kpi-gradient-purple text-white">
-                  {editingItem ? "Update Category" : "Save Category"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─────────────────── MODAL: DIRECT AREA MODAL ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODAL: DIRECT AREA MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showAreaModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fade-in">
@@ -1891,7 +1517,7 @@ export function ConfigurationClient() {
                 onClick={() => setShowAreaModal(false)}
                 className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -2011,7 +1637,7 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── MODAL: DIRECT COUNTRY MODAL ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODAL: DIRECT COUNTRY MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showCountryModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fade-in">
@@ -2023,7 +1649,7 @@ export function ConfigurationClient() {
                 onClick={() => setShowCountryModal(false)}
                 className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -2152,7 +1778,7 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── MODAL: DIRECT DIVISION MODAL ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODAL: DIRECT DIVISION MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showDivisionModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fade-in">
@@ -2164,7 +1790,7 @@ export function ConfigurationClient() {
                 onClick={() => setShowDivisionModal(false)}
                 className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -2284,7 +1910,7 @@ export function ConfigurationClient() {
         </div>
       )}
 
-      {/* ─────────────────── MODAL: DIRECT DISTRICT MODAL ─────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODAL: DIRECT DISTRICT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showDistrictModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fade-in">
@@ -2296,7 +1922,7 @@ export function ConfigurationClient() {
                 onClick={() => setShowDistrictModal(false)}
                 className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 

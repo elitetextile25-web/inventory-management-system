@@ -88,7 +88,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, organizationName }: SidebarProps) {
   const pathname = usePathname();
-  const [companyName, setCompanyName] = React.useState(organizationName || "FabricPro");
+  const [companyName, setCompanyName] = React.useState(organizationName || "EliteTex Fabric");
 
   React.useEffect(() => {
     if (organizationName) {

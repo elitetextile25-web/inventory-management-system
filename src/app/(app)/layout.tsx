@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <DashboardLayout user={session.user} organizationName={org?.name || "FabricPro"}>
+    <DashboardLayout user={session.user} organizationName={org?.name || "EliteTex Fabric"}>
       {children}
     </DashboardLayout>
   );
