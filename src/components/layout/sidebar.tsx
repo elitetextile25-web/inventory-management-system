@@ -32,7 +32,6 @@ const NAV_ITEMS = [
     group: "Store Management",
     items: [
       { label: "Storage Locations", href: "/store-management/storage-locations", icon: Warehouse },
-      { label: "Purchase Sources", href: "/store-management/purchase-sources", icon: MapPin },
       { label: "Stock Transfers", href: "/store-management/transfers", icon: ArrowLeftRight },
     ],
   },

@@ -75,15 +75,6 @@ const STATIC_ITEMS: SearchItem[] = [
     badge: "Stock In",
   },
   {
-    id: "action-new-source",
-    title: "Add Purchase Source",
-    subtitle: "Register textile mill, factory, or wholesale market stall",
-    category: "Quick Actions",
-    icon: MapPin,
-    href: "/store-management/purchase-sources/new",
-    badge: "Source",
-  },
-  {
     id: "action-new-location",
     title: "Add Storage Location",
     subtitle: "Register warehouse, branch, or showroom storage",
@@ -115,18 +106,10 @@ const STATIC_ITEMS: SearchItem[] = [
   {
     id: "nav-store-management",
     title: "Store Management Hub",
-    subtitle: "Overview of all purchase sources, warehouses & locations",
+    subtitle: "Overview of all warehouses & storage locations",
     category: "Navigation",
     icon: Warehouse,
     href: "/store-management",
-  },
-  {
-    id: "nav-purchase-sources",
-    title: "Purchase Sources",
-    subtitle: "Track where fabrics & products are sourced or purchased",
-    category: "Navigation",
-    icon: MapPin,
-    href: "/store-management/purchase-sources",
   },
   {
     id: "nav-storage-locations",
